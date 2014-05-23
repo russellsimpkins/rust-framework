@@ -3,6 +3,8 @@ PHP Rest Framework
 
 I created this basic, bare bones RESTFul Framework for PHP that minimizes dependencies while providing variable validation and rapid adaptation via inversion of control. 
 
+**NOTE** I am in the process of updating the docs to support namespaces etc. so please forgive any mistakes or omissions for the new few days/weeks and feel free to contact me with questions.
+
 Rationale/Background
 ------
 I was motivated to come up with something that was simple yet powerful. I also wanted to keep the dependencies to a bare minimum and be really flexible for developers, but work within the limits/features of PHP. I also wanted something that was easy to figure out and easy to determine where the logic was. Inversion of Control to rescue.
@@ -238,4 +240,7 @@ src/Rust/Hash/Validator.php
 ```
 
 The validator is the code that checks the parameters against the regular pattern expressions. I separated out the variable validation logic if you want to use the validates on it's own.
-=======
+
+A little more background
+------
+My friends at worked named this the Rust framwork and that is why it's src/Rust and not src/Rest. 
