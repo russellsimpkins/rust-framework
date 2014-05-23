@@ -243,4 +243,4 @@ The validator is the code that checks the parameters against the regular pattern
 
 A little more background
 ------
-My friends at worked named this the Rust framwork and that is why it's src/Rust and not src/Rest. 
+My friends at worked named this the Rust framework and that is why it's src/Rust and not src/Rest. 
