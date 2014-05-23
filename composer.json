@@ -1,0 +1,16 @@
+{
+    "name": "russellsimpkins/php-rust-framework",
+    "description": "The PHP Rust Framework is a simple, bare bones framework for doing RESTFul APIs. It uses inversion of control (IOC) and input validation to make life easy.",
+    "authors": [
+        {
+            "name": "Russell Simpkins",
+            "email": "russell.simpkins@nytimes.com"
+        }
+    ],
+    "version": "1.0",
+    "type": "library",
+    "autoload": {
+        "classmap": ["src/"]
+    },
+    "license": "GPL"
+}
