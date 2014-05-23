@@ -1,17 +1,17 @@
-Rust Framework
+PHP Rest Framework
 ======
 
-I created this very basic, bare bones PHP RESTFul Framework that minimizes dependencies while providing variable validation and rapid adaptation via inversion of control. 
+I created this basic, bare bones RESTFul Framework for PHP that minimizes dependencies while providing variable validation and rapid adaptation via inversion of control. 
 
 Rationale/Background
 ------
-I was motivated to come up with something that was simple yet powerful. I also wanted to keep the dependencies to a bare minimum and be really flexible for developers, but work within the limits/features of PHP. I also wanted something that was easy to figure out and easy to determine where the logic was. One big problem I have with my legacy code is figuring out where to start because our entry points aren't clearly defined given different implementations. What I found in Billy's implementation was the notion of a route that defined everything (at least that's where I've taken it.) The route defines the URI, HTTP Method, class and method to execute as well as the class to use for standard out and standard error. I also wanted to reduce inheritance and limit the number of files you have to open to figure out what's going on. I think there has been a bit of an abuse of inheritance in the current php rest framework so much of our code uses. Inheritance for the sake of inheritance is a bad idea. The framework lets you use inheritance or composition, but it's actually less characters to type if you use composition instead of inheritance. 
+I was motivated to come up with something that was simple yet powerful. I also wanted to keep the dependencies to a bare minimum and be really flexible for developers, but work within the limits/features of PHP. I also wanted something that was easy to figure out and easy to determine where the logic was. Inversion of Control to rescue.
 
 How it works
 ------
-Typically you let your web server locate files off of the doc root. At the Times, we tend to route requests in Apache using Alias and regular patterns e.g. AliasMatch /svc/xyz /some/php/entry/point
+Typically you let your web server locate files off of the doc root or you can use an alias and regular patterns e.g. AliasMatch /svc/xyz /some/php/entry/point
 
-What you do after that point varies and the framework I built address what to do after you have mapped the request to the entry point. In this framework you have to do a few things.
+What you do after that point varies. The framework I built address what to do after you have mapped the request to the entry point. In this framework you have to do a few things.
 
   - Install the framework
   - Define your route
@@ -30,65 +30,7 @@ I found a few great benefits developing an API with this framework.
   - Quickly able to add new standard out/standard error handlers without breaking everything else. When I added "help" I was able to add a straight json output in seconds.
   - Self documenting. If you map in help, you can spit out the key API information as JSON. I'm currently working with Eric Schorr to make it look pretty.
 
-Using the Google CSE API as an example
-------
-Again, the framework requires very little to use. Here's the most basic example.
 
-The web server entry point for the API is index.php.  Map this to a URL path on your server.
-  * RewriteRule ^/svc/cse /opt/nyt/www/api/external/svc/cse/index.php [L] (Apache)
-  * server { location /svc/cse { fastcgi_param  SCRIPT_FILENAME  $document_root/index.php; } } (Nginx)
-
-The entry point maps the routes (URL paths) to the class/method to be invoked, and the corresponding response objects.  It passes those route definitions to the controller, which invokes the service.
-
-  * Google CSE API index.php: https://svn.prvt.nytimes.com/svn/app/google-cse-api/trunk/src/www/api/external/svc/cse/index.php
-  * Google CSE API Search.class.php: https://svn.prvt.nytimes.com/svn/app/google-cse-api/trunk/src/lib/websafe/php/NYTD/GoogleCSESearch/API/Search.class.php (invoked method accepts the decoded GET/POST params from the controller)
-
-```
-<?php
-/** index.php
- *
- * @author James Boehmer <james.boehmer@nytimes.com>
- * @version $Id: index.php 66242 2012-08-09 21:55:08Z james.boehmer $
- */
-
-nytd_require('NYTD/Rust/Service/Controller.php');
-nytd_require('NYTD/GoogleCSESearch/API/Search.class.php');
-nytd_require('NYTD/GoogleCSESearch/API/Response.class.php');
-
-$routes = array(
-        array('rule'   => ';^/svc/cse/v2/sitesearch.jsonp$;',
-            'params'  => array(),
-            'action'  => 'GET',
-            'class'   => 'NYTD_GoogleCSESearch_API_Search',
-            'method'  => 'cmdGoogleCSESearch',
-            'name'    => 'Site Search',
-            'docs'    => 'Invoke a Google site search',
-            'std_out' => 'NYTD_GoogleCSESearch_API_JSONPResponse',
-            'std_err' => 'NYTD_GoogleCSESearch_API_ErrorResponse',
-            'pcheck' => array('callback' => '/(.+)/'),
-        ),
-        array('rule'   => ';^/svc/cse/v2/sitesearch.json$;',
-            'params'  => array(),
-            'action'  => 'GET',
-            'class'   => 'NYTD_GoogleCSESearch_API_Search',
-            'method'  => 'cmdGoogleCSESearch',
-            'name'    => 'Site Search',
-            'docs'    => 'Invoke a Google site search',
-            'std_out' => 'NYTD_GoogleCSESearch_API_JSONResponse',
-            'std_err' => 'NYTD_GoogleCSESearch_API_ErrorResponse',
-            'pcheck' => array(),
-        ),
-        
-);
-$serviceController = new NYTD_Rust_Service_Controller();
-$result = $serviceController->run($routes);
-```
-
-A quick restart/reload of Apache and you can see it working.
-```
-  curl http://localhost/svc/cse/help.json
-```
-I've been trying to keep it simple, and I feel like that goal is accomplished. As you can see above, you don't need to require but a few files. If you wanted to go even more slim, you can take out the Success and Error response requires, remove the std_out and std_err from the route and handle the results by hand. I went with the classes because I generally write RESTFul APIs that have specific output expectations that don't change from method to method. 
 
 Routes
 ------  
@@ -137,12 +79,12 @@ This requires a little documentation. Let's take a look at an example:
 
 ```
 array('rule'   => ';^/svc/asset/user/([0-9]{1,15})/license/type/([a-z]{1,40})/size/([0-9]{1,10}).json$;',
-                    'params' => array('script_path','id','asset_type','views'),
-                    'action' => 'POST',
-                    'class'  => 'NYTD_Rust_AssetAccess_License',
-                    'method' => 'restCreateUserLicense',
-                    'std_out' => 'NYTD_Rust_MetaJson_Response',
-                    'std_err' => 'NYTD_Rust_MetaJson_ErrorResponse',
+                    'params'  => array('script_path','id','asset_type','views'),
+                    'action'  => 'POST',
+                    'class'   => 'License',
+                    'method'  => 'restCreateUserLicense',
+                    'std_out' => 'Response',
+                    'std_err' => 'ErrorResponse',
                     'pcheck' => array('subscription_id'=>'/([0-9]{1,15})/',
                                       'asset_type'     =>'/([a-z]{1,15})/',
                                       '*views'         =>'/([0-9]{1,10})/',
@@ -151,8 +93,8 @@ array('rule'   => ';^/svc/asset/user/([0-9]{1,15})/license/type/([a-z]{1,40})/si
                                       '*expires_on'    =>'/([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})/',
                                       '*expires'       =>'/([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})/',
                                       '*starts'        =>'/([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})/',
-                                      '*#subscription_meta_data' =>array('*CIS_PRD_ID'=>'/([A-Z0-9]{0,2})/'),
-                                      '*#offer_chain_meta_data'  =>array('*PRD_ID'=>'/^([0-9]{0,15})$/'),
+                                      '*#subscription_meta_data' =>array('*SOME_PRD_ID'=>'/([A-Z0-9]{0,2})/'),
+                                      '*#offer_meta_data'  =>array('*PRD_ID'=>'/^([0-9]{0,15})$/'),
                                       '*!ignore'       =>''
                                       )
                     ),
@@ -193,7 +135,7 @@ $hclass  = $route['class'];
 $method  = $route['method'];
 $handler = new $hclass;
 
-if ($method == 'help' && $hclass == 'NYTD_Rust_Service_Controller') {
+if ($method == 'help' && $hclass == 'Rust\Service\Controller') {
     /*
      * a special case to spit out the route data sharing what services the routes provide
      */
@@ -206,13 +148,13 @@ if ($method == 'help' && $hclass == 'NYTD_Rust_Service_Controller') {
  * If std_out and std_err are defined, handle the results
  */
 if (!empty($route['std_out']) && !empty($route['std_err']) ) {
-    if (empty($result[NYTD_Rust_HTTP_ResponseCodes::GOOD])) {
+    if (empty($result[Rust\HTTP\ResponseCodes::GOOD])) {
         $err = $route['std_err'];
         foreach ($result as $code=>$msg)
             $res = new $err($code,$msg);
     } else {
         $out = $route['std_out'];
-        $res = new $out($result[NYTD_Rust_HTTP_ResponseCodes::GOOD]);
+        $res = new $out($result[Rust\HTTP\ResponseCodes::GOOD]);
     }
     return;
 }
@@ -240,12 +182,13 @@ What if I don't like that contract, can I still use the framework? Yes. Do **NOT
 The Controller
 ------
 ```
-src/lib/backend/php/NYTD/Rust/Service/Controller.php
+src/Rust/Service/Controller.php
 ```
 
 The controller file has the logic to grab and process input data and then map requests to routes. To use the framework, you have to either extend the Controller or create an instance and execute the run method. e.g.
 
 ```
+    use Rust\Service\Controller;
     /**
      * The run function normally expects no parameters, adding url and params
      * to support test frameworks like simple test.
@@ -254,7 +197,7 @@ The controller file has the logic to grab and process input data and then map re
      * @param $params - support unit tests
      */
     public function run($path=null, $params=null) {
-        $r = new NYTD_Rust_Service_Controller();
+        $r = new Controller();
         $result = $r->run($this->routes,$path,$params);
     }
 ```
@@ -285,13 +228,14 @@ public function __construct($strip=TRUE,$params=null,$action='GET') {
 So, if you want the meta/data structure in your data, or if you like to pass in using the parameter data, then you should construct an instance of the controller with:
 
 ```
-$r = new NYTD_Rust_Service_Controller(false);
+$r = new Controller(false);
 ```
 
 The validator 
 ------
 ```
-src/lib/backend/php/NYTD/Rust/Hash/Validator.php
+src/Rust/Hash/Validator.php
 ```
 
 The validator is the code that checks the parameters against the regular pattern expressions. I separated out the variable validation logic if you want to use the validates on it's own.
+=======
