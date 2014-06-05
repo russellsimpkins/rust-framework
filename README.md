@@ -5,15 +5,15 @@ I created this basic, bare bones RESTFul Framework for PHP that minimizes depend
 
 **NOTE** I am in the process of updating the docs to support namespaces etc. so please forgive any mistakes or omissions for the new few days/weeks and feel free to contact me with questions.
 
-Rationale/Background
+Background
 ------
-I was motivated to come up with something that was simple yet powerful. I also wanted to keep the dependencies to a bare minimum and be really flexible for developers, but work within the limits/features of PHP. I also wanted something that was easy to figure out and easy to determine where the logic was. Inversion of Control to rescue.
+I was motivated to come up with something that was simple yet powerful. I also wanted to keep the dependencies to a bare minimum, be flexible for developers and work within the limits/features of PHP. I also wanted something that made it easy to determine entry points. Inversion of Control to rescue.
 
 How it works
 ------
-Typically you let your web server locate files off of the doc root or you can use an alias and regular patterns e.g. AliasMatch /svc/xyz /some/php/entry/point
+Typically you let your web server locate files off of the doc root or you can use an alias and regular patterns e.g. AliasMatch /svc/xyz /some/php/entry/point.php
 
-What you do after that point varies. The framework I built address what to do after you have mapped the request to the entry point. In this framework you have to do a few things.
+What you do after that point varies. This framework addresses what to do after you have mapped the request to the entry point. In this framework you have to do a few things.
 
   - Install the framework
   - Define your route
@@ -28,11 +28,41 @@ Why use it?
 I found a few great benefits developing an API with this framework.
 
   - Quick and easy to make changes. If you need to change the URL, add parameters to the url or to the post body its really quick and easy since it's just a configuration change.
-  - Zero variable validation in my code. It really cleans up your code. You go from having a lot of error checking in each method to only checking to see if stuff came in e.g. paging values don't have to bet passed, but if they do, you don't get away from checking for is_set or empty.
-  - Quickly able to add new standard out/standard error handlers without breaking everything else. When I added "help" I was able to add a straight json output in seconds.
-  - Self documenting. If you map in help, you can spit out the key API information as JSON. I'm currently working with Eric Schorr to make it look pretty.
+  - Zero variable validation in my code. It really cleans up your code. You go from having a lot of variable checking in each method to only checking to see if stuff came in e.g. paging values don't have to be passed in, but if they are, you only check for is_set or !empty and not if it's a valid integer in range.
+  - Easily add new standard out/standard error handlers without breaking everything else. When I added the "help" feature, I was able to add a straight json output in seconds.
+  - Self documenting (more or less). The help and iodocs are routed for everyone. You just need to add the description and name fields to your route.
 
+What is it?
+------
+The framework let's you define a route you want your rest service on. For example, let's suppose you have the following service that get's existing users based on their user id:
 
+```
+/svc/user/([0-9]{1-10}).json
+```
+
+That is what we call a **rule** in the Rust Framework.  That rule will have a supported action e.g. GET, PUT, POST or DELETE. You specify which method to support using the **action** field. 
+
+So, when someone requests /svc/user/321.json using GET, Rust would match the **rule.** Rust would grab /svc/user/321.json and 321 for you and add them to the hash based on the values you identified in **params.**. Suppose you used params=['script_path','user_id']. That's a good example. Rust would create an instance of the **class** you defined and execute the **method** you defined. If you had class=User method=Fetch, Rust would do this:
+
+```
+$c = new $class();
+$c->$method( $data );
+```
+You need to do your logic and return 
+
+```
+return array(200=>$data);
+```
+** or **
+```
+return array(500=>"Reason for failure");
+```
+
+Rust will create an instance of the **std_out** class if the returned array has 200 or it will use the **std_err** class. The Output classes all work on that assumption, but Rust doesn't look at the data. So, you can put whatever you like in the array if you define your own standard output/standard error classes.
+
+If you're code uses POST and has parameters, you can use **pcheck** to define variable validation. If any of the validation methods fail, Rust will terminate and create an instance of **std_err** to return the validation failure. 
+
+If you define an **fiters**, Rust will pass the data to each of the filters and see that the filter returns true. If any filter fails, Rust will create an instance of **std_err** and pass the error message.
 
 Routes
 ------  
@@ -56,7 +86,7 @@ As of this writing, a route consists of the following attributes:
 ```
 **action**: what HTTP method. checks $_SERVER['REQUEST_METHOD']
 
-**params**: this is where you can name the elements in the url. e.g. ([0-9]{1,15}) is regi_id or age
+**params**: the params element allows you to name the parameters in the url. e.g. ([0-9]{1,15}) is user id or age. If you omit params, you will not get them in the $data parameter passed to your method
 
 **class**: this is the class file the code should create a new instance of. 
 
