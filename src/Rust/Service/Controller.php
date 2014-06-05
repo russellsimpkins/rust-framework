@@ -30,18 +30,29 @@ use Rust\Output\StandardErr;
  */
 class Controller {
     
-    public static $helpRoute = 
-            array('rule'    => ';^.*help.json$;',
-		  'params'  => array('script_path'),
-		  'action'  => 'GET',
-		  'class'   => 'Rust\Service\Controller',
-		  'method'  => 'help',
-		  'name'    => 'Help method',
-		  'docs'    => 'Help method describes all of the features the api supports.',
-		  'std_out' => 'Rust\Output\JsonOutput',
-		  'std_err' => 'Rust\Output\JsonError',
-		  'pcheck'  => array(),
-		  );
+    public static $docs = array(
+        array('rule'    => ';^.*help.json$;',
+              'params'  => array('script_path'),
+              'action'  => 'GET',
+              'class'   => 'NYTD\Rust\Service\Controller',
+              'method'  => 'help',
+              'name'    => 'Help method',
+              'docs'    => 'Help method describes all of the features the api supports.',
+              'std_out' => 'NYTD\Rust\MetaJson\PrettyResponse',
+              'std_err' => 'NYTD\Rust\MetaJson\ErrorResponse',
+              'pcheck'  => array()
+			  ),
+		array('rule'    => ';^.*iodoc.json$;',
+              'params'  => array('script_path'),
+              'action'  => 'GET',
+              'class'   => 'NYTD\Rust\Service\Controller',
+              'method'  => 'iodoc',
+              'name'    => 'iodocs method',
+              'docs'    => 'iodcs method describes all of the features the api supports in iodoc format.',
+              'std_out' => 'NYTD\Rust\MetaJson\PrettyResponse',
+              'std_err' => 'NYTD\Rust\MetaJson\ErrorResponse',
+              'pcheck'  => array(),
+			  ));
     
     /**
      * Our constructor takes on the task of defining the action and params
@@ -97,6 +108,7 @@ class Controller {
         $out          = empty($routes['std_out']) ? null    : $routes['std_out'];
         $err          = empty($routes['std_err']) ? null    : $routes['std_err'];
         $filters      = empty($routes['filters']) ? array() : $routes['filters'];
+		$this->routes = $routes;
 
         if (empty($path) && !empty($_SERVER['SCRIPT_NAME'])) {
             $path = $_SERVER['SCRIPT_NAME'];
@@ -109,11 +121,12 @@ class Controller {
         }
 
         if (!empty($routes['routes'])) {
-            $allroutes = $routes['routes'];
+            $allroutes = array_merge($routes['routes'], self::$docs);
+			$this->routes['routes'] = array_merge($routes['routes'], self::$docs);
         } else {
-            $allroutes = $routes;
+            $allroutes = array_merge($routes, self::docs);
+			$this->routes = array_merge($routes, self::docs);
         }
-        $allroutes[] = self::$helpRoute;
 
         foreach ($allroutes as $route) {
             if (empty($route['rule'])) {
@@ -143,6 +156,7 @@ class Controller {
                  * NYT-S cookie.
                  */
                 if (!empty($filters)) {
+					// class is a reserved word
                     foreach ($filters as $clazz) {
                         $filter = new $clazz;
                         $ok     = $filter->filter($this->params);
@@ -161,13 +175,15 @@ class Controller {
                  * but don't override existing params.
                  */
                 $index = 0;
-                foreach ($route['params'] as $param) {
-                    if (isset($this->params[$param])) {
-                        $index++;
-                    } else { 
-                        $this->params[$param] = $matches[$index++];
-                    }
-                }
+				if (!empty($route['params'])) {
+					foreach ($route['params'] as $param) {
+						if (isset($this->params[$param])) {
+							$index++;
+						} else { 
+							$this->params[$param] = $matches[$index++];
+						}
+					}
+				}
 
                 /*
                  * The validator returns TRUE if ok, otherwise an array
@@ -186,11 +202,11 @@ class Controller {
                 $method  = $route['method'];
                 $handler = new $hclass;
 
-                if ($method == 'help' && $hclass == 'Rust\Service\Controller') {
+                if (($method == 'help' || $method == 'iodoc') && $hclass == 'NYTD\Rust\Service\Controller') {
                     /*
                      * a special case to spit out the route data sharing what services are provided
                      */
-                    $result = $handler->$method($allroutes);
+                    $result = $handler->$method($this->routes);
                 } else {
                     $result = $handler->$method($this->params);
                 }
@@ -273,9 +289,12 @@ class Controller {
      */
     public function help($routes) {
         $data = array();
-        foreach ($routes as $route) {
+        foreach ($routes['routes'] as $route) {
             unset($item);
-
+			if (empty($route['rule'])) {
+				print_r($route);
+				continue;
+			}
             $item['uri']      = $route['rule'];
             $item['method']   = $route['action'];
             $item['name']     = empty($route['name']) ? 'Name not set in the route.' : $route['name'];
@@ -291,6 +310,7 @@ class Controller {
             $end     = strlen($item['uri']);
             $pathres = array();
             $addre   = false;
+			$elem    = '';
             foreach (str_split($item['uri'],1) as $c) {
                 if ($c == '(') {
                     $addre = true;
@@ -311,7 +331,9 @@ class Controller {
 
             /*
              * Paths can have params that can have names. We want to grab all
-             * but the first path parameter names since the first is the full uri
+             * but the first path parameter names since the first is just a place
+             * holder given that preg_match returns the entire string in position 0
+             * when there is a match.
              */
             if (isset($route['params']) && 
                 is_array($route['params'])) {
@@ -337,6 +359,105 @@ class Controller {
             $data[] = $item;
         }
         return array(ResponseCodes::GOOD=>$data);
+    }
+
+	/**
+     * Creates documentation from the route(s)
+     *
+     */
+    public function iodoc($routes) {
+        $data = array();
+
+		$data['name']			= empty($routes['name']) ? 'UNNAMED NYTimes.com REST Service' : $routes['name'];
+		$data['protocol']		= empty($routes['protocol']) ? 'http' : $routes['protocol'];
+		$data['baseURL']		= empty($routes['baseUrl']) ? 'internal.du.nytimes.com' : $routes['baseUrl'];
+		$data['publicPath']		= '';
+		$data['privatePath']	= '';
+		$data['auth']			= '';
+		$data['methods']		= array();
+
+        foreach ($routes['routes'] as $route) {
+            unset($item);
+            $item['URI']				= empty($route['rule']) ? 'UNKNOWN' : $route['rule'];
+            $item['HTTPMethod']			= empty($route['action']) ? 'UNKNOWN' : $route['action'];
+            $item['MethodName']			= empty($route['name']) ? 'UNNAMED!' : $route['name'];
+            $item['Synopsis']			= empty($route['docs']) ? 'UNDOCUMENTED!.' : $route['docs'];
+            $item['RequiresOAuth']		= 'N';
+
+            /*
+             * Get the regex patterns from the path urls. Path urls let you define variables in the url
+             * e.g. /some/( valid re )/svc/([a-z]{1,20})/example.json 
+             * The next block looks to parse out the ( ) and build up the expressions in $pathres. $pathres
+             * variables get named in the route field "params". Users should ONLY name path params in "params"
+             * $pathres == path regex patterns
+             */
+            $end     = strlen($item['URI']);
+            $pathres = array();
+            $addre   = false;
+			$elem    = '';
+            foreach (str_split($item['URI'],1) as $c) {
+                if ($c == '(') {
+                    $addre = true;
+                    $elem .= $c;
+                    continue;
+                }
+                if ($c == ')') {
+                    $addre     = false;
+                    $elem     .= $c;
+                    $pathres[] = $elem;
+                    $elem      = '';
+                    continue;
+                }
+                if ($addre) {
+                    $elem .= $c;
+                }
+            }
+
+            /*
+             * Paths can have params that can have names. We want to grab all
+             * but the first path parameter names since the first is just a place
+             * holder given that preg_match returns the entire string in position 0
+             * when there is a match.
+             */
+			$item['parameters'] = array();
+            if (isset($route['params']) && 
+                is_array($route['params'])) {
+                $end = count($route['params']);
+                
+                for ($i = 1; $i < $end; ++$i) {
+					$item['parameters'][] = array( 'Name'        =>$route['params'][$i],
+												   'Type'        =>"string", 
+												   'Description' =>'The parameter is expected in the URL. Valid values defined as a php regex: '. $pathres[($i-1)],
+												   'Required'    =>'Y');
+				}
+            }
+	    
+            if (isset($route['pcheck'])) {
+				$params = $this->recurseParams($route['pcheck']);
+				foreach ($params as $param) {
+					$parm = array('Name' => $param['name'],
+								  'Required' => $param['is_required'] ? 'Y' : 'N'
+								  );
+		    
+					if (!empty($param['elements']) && is_array($param['elements'])) {
+						$parm['Description'] = 'JSON Object: ' . json_encode($param['elements']);
+					} else {
+						if ($param['is_validated']) {
+							$parm['Description'] = 'Valid values defined as a php regex: ' . $param['regex'];
+						} else {
+							$parm['Description'] = 'The value is unchecked. See the method documentation for notes.';
+						}
+					}
+					if ($param['is_repeated']) {
+						$parm['Description'] .= ' This value is repeated.';
+					}
+					$item['parameters'][] = $parm;
+					unset($parm);
+				}
+            }
+            $data['methods'][] = $item;
+        }
+        return array(\NYTD\Rust\HTTP\ResponseCodes::GOOD=>$data);
     }
 
     /**

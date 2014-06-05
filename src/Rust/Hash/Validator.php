@@ -6,14 +6,24 @@ use Rust\HTTP\ResponseCodes;
 /**
  * This class encapsulates the logic used to do input validation. Input validation is 
  * done using regular patterns and preg_match.
- * Here are the validation tenants:
+ * Here are the validation rules:
  * - Parameters can be required or optional. 
- * - If you don't define a validation rule for each parameter, undefined parameters aren't validated
- * - If you define a validation rule and the parameter is not passed, the validation fails unless it is marked as optional
- *   - an optional parameter rule begins with * e.g. *user_id=[0-9]{5-10} user_id is optional but if it's passed must
- *     be a digit 5 - 10 in length
- * - If the validation rule starts with #, the validation rule is for an array. *# means an optional array
- * - If the validatino rule starts with !, the validation rule is ignored. This allows you to define what you expect
+ * - If you don't define a validation rule for each parameter, undefined
+ *   parameters aren't validated and aren't prevented.
+ *
+ * - If you define a validation rule and the parameter is not passed, the
+ *   validation fails unless it is marked as optional
+ *   - an optional parameter rule begins with * e.g. *user_id=[0-9]{5-10} 
+ *     user_id is optional, but if it's passed must be a digit 5 - 10 in length
+ *
+ * - If the validation rule starts with #, the validation rule is for an 
+ *   array. *# means an optional array
+ *
+ * - If the validation rule starts with !, the validation rule is ignored. 
+ *   This allows you to define what you expect
+ *
+ * - If the validation rule starts with @, then the variable is treated as an 
+ *   array e.g. [1,3,6] and we validate each entry in the array
  */
 class Validator {
     

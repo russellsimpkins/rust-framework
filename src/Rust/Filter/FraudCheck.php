@@ -1,6 +1,6 @@
 <?php
 namespace Rust\Filter;
-
+use Rust\HTTP;
 /**
  * This is an example to show how you might filter a request. This will check to see
  * if the params has fraud=true or fraud=false.
@@ -14,7 +14,7 @@ class FraudCheck {
      */
     public function filter(&$params) {
 	if (!empty($params['fraud']) && $params['fraud'] === TRUE) {
-            return array(NYTD_Rust_HTTP_ResponseCodes::ERROR=>'Reason code: Fradulant request');
+            return array(ResponseCodes::ERROR=>'Reason code: Fradulant request');
 	}
         return TRUE;
     }
