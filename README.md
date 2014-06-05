@@ -53,7 +53,7 @@ You need to do your logic and return
 ```
 return array(200=>$data);
 ```
-** or **
+**or**
 ```
 return array(500=>"Reason for failure");
 ```
