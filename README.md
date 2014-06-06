@@ -15,7 +15,7 @@ I found a few great benefits developing an API with this framework.
   - Easily add new standard out/standard error handlers without breaking everything else. When I added the "help" feature, I was able to add a straight json output in seconds.
   - Self documenting (more or less). The help and iodocs are routed for everyone. You just need to add the description and name fields to your route.
 
-Quick start?
+Quick start
 ------
 Let's assume you're using apache and you map to your PHP:
 
