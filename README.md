@@ -1,26 +1,9 @@
-PHP Rest Framework
+PHP Rust Framework
 ======
 
-I created this basic, bare bones RESTFul Framework for PHP that minimizes dependencies while providing variable validation and rapid adaptation via inversion of control. 
+The Rust Framework is a basic, bare bones RESTFul Framework for PHP that minimizes dependencies while providing variable validation and rapid adaptation via inversion of control. 
 
 **NOTE** I am in the process of updating the docs to support namespaces etc. so please forgive any mistakes or omissions for the new few days/weeks and feel free to contact me with questions.
-
-Background
-------
-I was motivated to come up with something that was simple yet powerful. I also wanted to keep the dependencies to a bare minimum, be flexible for developers and work within the limits/features of PHP. I also wanted something that made it easy to determine entry points. Inversion of Control to rescue.
-
-How it works
-------
-Typically you let your web server locate files off of the doc root or you can use an alias and regular patterns e.g. AliasMatch /svc/xyz /some/php/entry/point.php
-
-What you do after that point varies. This framework addresses what to do after you have mapped the request to the entry point. In this framework you have to do a few things.
-
-  - Install the framework
-  - Define your route
-  - Create your application logic
-  - Pass your routes to the controller
-
-With the barebones rest framework, that's really all you need to do. 
 
 Why use it?
 ------
@@ -32,17 +15,53 @@ I found a few great benefits developing an API with this framework.
   - Easily add new standard out/standard error handlers without breaking everything else. When I added the "help" feature, I was able to add a straight json output in seconds.
   - Self documenting (more or less). The help and iodocs are routed for everyone. You just need to add the description and name fields to your route.
 
-What is it?
+Quick start?
 ------
-The framework let's you define a route you want your rest service on. For example, let's suppose you have the following service that get's existing users based on their user id:
+Let's assume you're using apache and you map to your PHP:
 
 ```
-/svc/user/([0-9]{1-10}).json
+AliasMatch ^/svc/user /some/php/user/service.php
 ```
 
-That is what we call a **rule** in the Rust Framework.  That rule will have a supported action e.g. GET, PUT, POST or DELETE. You specify which method to support using the **action** field. 
+The framework expects you to define a route for your service. Let's suppose you have the following service that gets an existing user based on their user id, e.g.
 
-So, when someone requests /svc/user/321.json using GET, Rust would match the **rule.** Rust would grab /svc/user/321.json and 321 for you and add them to the hash based on the values you identified in **params.**. Suppose you used params=['script_path','user_id']. That's a good example. Rust would create an instance of the **class** you defined and execute the **method** you defined. If you had class=User method=Fetch, Rust would do this:
+```
+/svc/user/32451.json
+```
+
+To handle that service we would create a **rule**, e.g.
+
+```
+'rule' => ';^/svc/user/([0-9]{1-10}).json$;'
+```
+
+PHP's preg_match expects delimiters, so we have to add ; before and after the regex.  That rule will have a supported action e.g. GET, PUT, POST or DELETE. You specify which method to support using the **action** field. 
+
+```
+'action' => 'GET'
+```
+
+So, when someone requests /svc/user/321.json using GET, Rust will match the **rule** we have defined. Rust will grab /svc/user/321.json and 321 for you and add them to the hash based on the values you identified in **params**
+
+```
+'params'=>array('script_path','user_id')
+```
+
+Rust uses the params to create entries into a hash of data:
+
+```
+$data['script_path'] = '/svc/user/321.json';
+$data['user_id'] = 321;
+```
+
+Rust would create an instance of the **class** you defined and execute the **method** you defined. If you had 
+
+```
+'class' => 'User',
+'method' => 'Fetch'
+```
+
+Rust would do this:
 
 ```
 $c = new $class();
@@ -271,6 +290,21 @@ src/Rust/Hash/Validator.php
 
 The validator is the code that checks the parameters against the regular pattern expressions. I separated out the variable validation logic if you want to use the validates on it's own.
 
-A little more background
+Background
 ------
+I was motivated to come up with something that was simple yet powerful. I also wanted to keep the dependencies to a bare minimum, be flexible for developers and work within the limits/features of PHP. I also wanted something that made it easy to determine entry points. Inversion of Control to rescue.
+
 My friends at worked named this the Rust framework and that is why it's src/Rust and not src/Rest. 
+
+How it works
+------
+Typically you let your web server locate files off of the doc root or you can use an alias and regular patterns e.g. AliasMatch /svc/xyz /some/php/entry/point.php
+
+What you do after that point varies. This framework addresses what to do after you have mapped the request to the entry point. In this framework you have to do a few things.
+
+  - Install the framework
+  - Define your route
+  - Create your application logic
+  - Pass your routes to the controller
+
+With the barebones rest framework, that's really all you need to do. 
