@@ -67,17 +67,53 @@ Rust would do this:
 $c = new $class();
 $c->$method( $data );
 ```
-You need to do your logic and return 
+As a user, you would write your custom logic and return the results. Since you have a regex to define what "user_id" should have, there is no need to have any logic to validate the number is a number and not a string or some SQL injection attack. You simply use the data as $data['user_id']. You do whatever and return either:
 
 ```
 return array(200=>$data);
 ```
+
 **or**
+
 ```
 return array(500=>"Reason for failure");
 ```
 
 Rust will create an instance of the **std_out** class if the returned array has 200 or it will use the **std_err** class. The Output classes all work on that assumption, but Rust doesn't look at the data. So, you can put whatever you like in the array if you define your own standard output/standard error classes.
+
+Let's pull it all together:
+
+```
+<?php
+use Rust/Service/Controller;
+use Rust/HTTP/ResponseCodes;
+use Rust/Output/JsonOutput;
+use Rust/Output/JsonError;
+
+class Service {
+
+	  __construct() {
+
+	  }
+
+	  function run() {
+	      $c = new Controller();
+		  $c->run($this->$routes);
+	  }
+
+	  $routes = array('routes' => 
+	    array(
+	  	  'rule' => ';^/svc/user/([0-9]{1-10}).json$;',
+	  	  'params' => array('script_path','user_id'),
+	  	  'action' => 'GET',
+	  	  'class' => '\Namespace\User',
+	  	  'method' => 'Fetch'
+	  	  )
+	  );
+}
+$s = new Service();
+$s->run();
+```
 
 If you're code uses POST and has parameters, you can use **pcheck** to define variable validation. If any of the validation methods fail, Rust will terminate and create an instance of **std_err** to return the validation failure. 
 
