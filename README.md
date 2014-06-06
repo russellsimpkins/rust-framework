@@ -107,10 +107,12 @@ class Service {
 	  	  'params' => array('script_path','user_id'),
 	  	  'action' => 'GET',
 	  	  'class' => '\Namespace\User',
-	  	  'method' => 'Fetch'
+	  	  'method' => 'Fetch',
+		  'std_out' => 'Rest\Output\JsonOutput',
+		  'std_err' => 'Rest\Output\JsonError'
 	  	  )
 	  );
-}
+};
 $s = new Service();
 $s->run();
 ```
@@ -195,8 +197,8 @@ Rather than create structured json, I opted to use special charachters to design
 Here are the rule features.
 
   - If you define a pcheck rule, then the hash should have a key/value pair that will be validated with the RE.
-  - * If the name starts with *, the variable is optional. If it's present, it will be validated against the RE.
-  - # If the name start #, the variable is expected to be another hash.
+  - \* If the name starts with *, the variable is optional. If it's present, it will be validated against the RE.
+  - \# If the name start #, the variable is expected to be another hash.
   - ! If the name starts with !, then the variable is ignored. You can do this to document the variable but not apply any validation
   - @ If the name starts with @, then the variable is repeated e.g. a simple array. array(3,2,6,9)
 
@@ -332,15 +334,3 @@ I was motivated to come up with something that was simple yet powerful. I also w
 
 My friends at worked named this the Rust framework and that is why it's src/Rust and not src/Rest. 
 
-How it works
-------
-Typically you let your web server locate files off of the doc root or you can use an alias and regular patterns e.g. AliasMatch /svc/xyz /some/php/entry/point.php
-
-What you do after that point varies. This framework addresses what to do after you have mapped the request to the entry point. In this framework you have to do a few things.
-
-  - Install the framework
-  - Define your route
-  - Create your application logic
-  - Pass your routes to the controller
-
-With the barebones rest framework, that's really all you need to do. 
