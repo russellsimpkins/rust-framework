@@ -20,63 +20,63 @@ Quick start
 Let's assume you're using apache and you map to your PHP:
 
 ```
-AliasMatch ^/svc/user /some/php/user/service.php
+    AliasMatch ^/svc/user /some/php/user/service.php
 ```
 
 The framework expects you to define a route for your service. Let's suppose you have the following service that gets an existing user based on their user id, e.g.
 
 ```
-/svc/user/32451.json
+    /svc/user/32451.json
 ```
 
-To handle that service we would create a **rule**, e.g.
+Create a **rule** to handle the service:
 
 ```
-'rule' => ';^/svc/user/([0-9]{1-10}).json$;'
+    'rule' => ';^/svc/user/([0-9]{1-10}).json$;'
 ```
 
 PHP's preg_match expects delimiters, so we have to add ; before and after the regex.  That rule will have a supported action e.g. GET, PUT, POST or DELETE. You specify which method to support using the **action** field. 
 
 ```
-'action' => 'GET'
+    'action' => 'GET'
 ```
 
 So, when someone requests /svc/user/321.json using GET, Rust will match the **rule** we have defined. Rust will grab /svc/user/321.json and 321 for you and add them to the hash based on the values you identified in **params**
 
 ```
-'params'=>array('script_path','user_id')
+    'params'=>array('script_path','user_id')
 ```
 
 Rust uses the params to create entries into a hash of data:
 
 ```
-$data['script_path'] = '/svc/user/321.json';
-$data['user_id'] = 321;
+    $data['script_path'] = '/svc/user/321.json';
+    $data['user_id'] = 321;
 ```
 
 Rust would create an instance of the **class** you defined and execute the **method** you defined. If you had 
 
 ```
-'class' => 'User',
-'method' => 'Fetch'
+    'class'  => 'User',
+    'method' => 'Fetch'
 ```
 
 Rust would do this:
 
 ```
-$c = new $class();
-$c->$method( $data );
+    $c = new $class();
+    $c->$method( $data );
 ```
 As a user, you would write your custom logic and return the results. Since you have a regex to define what "user_id" should have, there is no need to have any logic to validate the number is a number and not a string or some SQL injection attack. You simply use the data as $data['user_id']. You do whatever and return either:
 
 ```
-return array(200=>$data);
+    return array(200=>$data);
 ```
 
 **or**
 
 ```
-return array(500=>"Reason for failure");
+    return array(500=>"Reason for failure");
 ```
 
 Rust will create an instance of the **std_out** class if the returned array has 200 or it will use the **std_err** class. The Output classes all work on that assumption, but Rust doesn't look at the data. So, you can put whatever you like in the array if you define your own standard output/standard error classes.
@@ -103,13 +103,13 @@ class Service {
 
 	  $routes = array('routes' => 
 	    array(
-	  	  'rule' => ';^/svc/user/([0-9]{1-10}).json$;',
-	  	  'params' => array('script_path','user_id'),
-	  	  'action' => 'GET',
-	  	  'class' => '\Namespace\User',
-	  	  'method' => 'Fetch',
-		  'std_out' => 'Rest\Output\JsonOutput',
-		  'std_err' => 'Rest\Output\JsonError'
+          'rule'    => ';^/svc/user/([0-9]{1-10}).json$;',
+          'params'  => array('script_path','user_id'),
+          'action'  => 'GET',
+          'class'   => '\Namespace\User',
+          'method'  => 'Fetch',
+          'std_out' => 'Rest\Output\JsonOutput',
+          'std_err' => 'Rest\Output\JsonError'
 	  	  )
 	  );
 };
@@ -123,7 +123,7 @@ If you define an **fiters**, Rust will pass the data to each of the filters and 
 
 Routes
 ------  
-As of this writing, a route consists of the following attributes:
+Each route consists of the following attributes:
 
   * rule
   * method
@@ -164,7 +164,7 @@ As of this writing, a route consists of the following attributes:
 
 pcheck
 ---
-This requires a little documentation. Let's take a look at an example:
+pcheck defines our variable validation. Let's take a look at an example:
 
 ```
 array('rule'   => ';^/svc/asset/user/([0-9]{1,15})/license/type/([a-z]{1,40})/size/([0-9]{1,10}).json$;',
@@ -193,8 +193,7 @@ array('rule'   => ';^/svc/asset/user/([0-9]{1,15})/license/type/([a-z]{1,40})/si
 
 pcheck should always be a hash (an array with named keys), even if it's empty. 
 pcheck is deinfed as "variable name"=>"regex" OR "variable name"=>hash.
-Rather than create structured json, I opted to use special charachters to designate rule features.
-Here are the rule features.
+pcheck supports special charachters to designate rule features.
 
   - If you define a pcheck rule, then the hash should have a key/value pair that will be validated with the RE.
   - \* If the name starts with *, the variable is optional. If it's present, it will be validated against the RE.
@@ -206,53 +205,19 @@ The code will look in the above order, so order is important. If you want to def
 you would the following:
 
 ```
-"*#dimensions"=>array('height'=>[0-9]{1-3},'width'=>[0-9]{1-3})
+    "*#dimensions"=>array('height'=>[0-9]{1-3},'width'=>[0-9]{1-3})
 ```
 
 std_out/std_err
 ---
-I decided to allow you to define how to handle the output, good or bad, with these parameters. The contract I assume is array(200=>any) or array(5xx=>any) but since you can define your own standard out/standard error you can still use the framework and return whatever best suits your application. The interface for std_out and std_err is to implement a constructor
+You to define how to handle the output, good or bad, with these parameters. The contract I assume is array(200=>any) or array(500=>any). If you pass an array, the framework tests to see that the first key matches this regex: ^2 - If it does, the framework creates an instance of std_out otherwise std_err is used. The interface for std_out and std_err is to implement a constructor.
 
-```
-public function __construct($code,$data)
-```
-
-Based on the std_err/std_out interface and application logic method returns, the framework has the following lines of code:
-
-```
-$hclass  = $route['class'];
-$method  = $route['method'];
-$handler = new $hclass;
-
-if ($method == 'help' && $hclass == 'Rust\Service\Controller') {
-    /*
-     * a special case to spit out the route data sharing what services the routes provide
-     */
-    $result  = $handler->$method($routes);
-} else {
-    $result  = $handler->$method($this->params);
-}
-
-/*
- * If std_out and std_err are defined, handle the results
- */
-if (!empty($route['std_out']) && !empty($route['std_err']) ) {
-    if (empty($result[Rust\HTTP\ResponseCodes::GOOD])) {
-        $err = $route['std_err'];
-        foreach ($result as $code=>$msg)
-            $res = new $err($code,$msg);
-    } else {
-        $out = $route['std_out'];
-        $res = new $out($result[Rust\HTTP\ResponseCodes::GOOD]);
-    }
-    return;
-}
-return $result;
-```
+To see how the framework handles output, read the function handleOut. 
+To see how to create std_out/std_err handlers, look at the classes in Rust\Output
 
 Application Logic
 ------
-In order for inversion of control to work, the most important piece of information to decide on was how to pass data between the framework and the code a user would write. Rather than get overly complicated, I decided to go with an array. So, if you are going to use the framework and you want to use built in standard out/standard error then your methods should **ALWAYS** return an array using HTTP Respons codes. A good response would be array(200=>any) or array(500=>any) This means that you can return any type of data in the array, but the contract is to pass the success/error in the hash when your method.
+In order for inversion of control to work, the most important piece of information to decide on was how to pass data between the framework and the code a user would write. Rather than get overly complicated, I decided to go with an array. So, if you are going to use the framework and you want to use built in standard out/standard error then your methods should **ALWAYS** return an array using HTTP Respons codes. A good response would be array(200=>any) or array(500=>any) This means that you can return any type of data in the array, but the contract is to pass the success/error in the hash result..
 
 To illustrate what we expect on success or failure:
 
@@ -291,42 +256,17 @@ The controller file has the logic to grab and process input data and then map re
     }
 ```
 
-When executed in that way, it is assumed that the route defines the std-out or the std-err. If they are not defined you would have to look at the responses yourself. 
-
-**NOTE** One major assumption I worked off of was that the methods executed would always return back an array with a numeric index where the index reflects success or failure using http response codes. e.g.
-
-```
-if (!empty($result['200'])) {
-  // it worked
-} else {
-  // best to foreach
-  foreach ($result as $code=>$data) {
-    //.. handle error
-  }
-}
-```
-
-If you have some legacy code that doesn't pass anything back or does something different, that's o.k. too.
-
-Feel free to look under the hood. Since I wrote this for me, I took the liberty to add logic when processing input. For instance, I pass all input to the Controller::decodeInput method. In there I look at the data and if it starts and ends with {} or [] then I assume the data to be JSON and encode the JSON. In addition, since we have agreed that all RESTFul JSON will be {meta:{},data:{}} and I don't typically need the meta I added a feature to strip data. Say you pass in {meta:{},data:{reg_id:12345}} the framework will pass along only {regi_id:12345} to my application logic.
-
-```
-public function __construct($strip=TRUE,$params=null,$action='GET') {
-```
-
-So, if you want the meta/data structure in your data, or if you like to pass in using the parameter data, then you should construct an instance of the controller with:
-
-```
-$r = new Controller(false);
-```
+When executed that way, it's assumed the route defines the std_out or the std_err. 
 
 The validator 
 ------
+
 ```
-src/Rust/Hash/Validator.php
+    src/Rust/Hash/Validator.php
 ```
 
-The validator is the code that checks the parameters against the regular pattern expressions. I separated out the variable validation logic if you want to use the validates on it's own.
+The validator is the code that checks the parameters against the regular pattern expressions. I separated out the variable validation logic if you want to use the validates on it's own. See the documentation on **pcheck** above.
+
 
 Background
 ------
