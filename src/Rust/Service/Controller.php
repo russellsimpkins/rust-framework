@@ -227,7 +227,8 @@ class Controller {
     }
             
     /**
-     * One function to encapsulate handling the success or failure
+     * One function to encapsulate handling the success or failure.
+	 * If we don't get an array as input, we just use $out.
      *
      * @param &$result array following array(200=>any) or array([0-9]{1,3}=>any)
      * @param &$out class name for success
@@ -236,18 +237,25 @@ class Controller {
      */
     public static function handleOut(&$result, &$out, &$err) {
         if ($out!=null && $err!=null) {
-
-            /*
-             * Any 2xx series is a valid success.
-             */
-            foreach ($result as $code=>$block) {
-                if (preg_match(';^2;',$code)) {
-                    $res = new $out($code,$block);
-                    return;
-                }
-                $res = new $err($code,$block);
-                return;
-            }
+			try {
+				if (is_array($result)) {
+					/*
+					 * Any 2xx series is a valid success.
+					 */
+					foreach ($result as $code=>$block) {
+						if (preg_match(';^2;',$code)) {
+							$res = new $out($code,$block);
+							return $result;
+						}
+						$res = new $err($code,$block);
+						return $result;
+					}
+				}
+				$res = new $out($code,$block);
+			} catch (Exception $e) {
+				print("EXCEPTION: More than likely there is a class naming issue in your route: $e");
+			}
+			
         }
         return $result;
     }
