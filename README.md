@@ -270,7 +270,9 @@ The validator is the code that checks the parameters against the regular pattern
 
 Background
 ------
-I was motivated to come up with something that was simple yet powerful. I also wanted to keep the dependencies to a bare minimum, be flexible for developers and work within the limits/features of PHP. I also wanted something that made it easy to determine entry points. Inversion of Control to rescue.
+I inherited a lot of PHP that was cumbersome to maintain because it was overly complicated to the point of obfuscation. You had to spend hours in research before you could be productive. That motivated me to come up with something that was simple and easy to use. I also wanted to keep the dependencies to a bare minimum and be flexible for developers. I also wanted something that made it easy to determine entry points. 
+
+This framework makes it easy and fun to write PHP. Input validation has proven to be a huge benefit. The defensive variable checking disappears and you can focus on the logic. I'm very satisfied with this project.
 
 My friends at worked named this the Rust framework and that is why it's src/Rust and not src/Rest. 
 
