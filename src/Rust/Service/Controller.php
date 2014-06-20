@@ -38,8 +38,8 @@ class Controller {
               'method'  => 'help',
               'name'    => 'Help method',
               'docs'    => 'Help method describes all of the features the api supports.',
-              'std_out' => 'Rust\MetaJson\PrettyResponse',
-              'std_err' => 'Rust\MetaJson\ErrorResponse',
+              'std_out' => 'Rust\Output\JsonOutput',
+              'std_err' => 'Rust\Output\JsonError',
               'pcheck'  => array()
 			  ),
 		array('rule'    => ';^.*iodoc.json$;',
@@ -49,8 +49,8 @@ class Controller {
               'method'  => 'iodoc',
               'name'    => 'iodocs method',
               'docs'    => 'iodcs method describes all of the features the api supports in iodoc format.',
-              'std_out' => 'Rust\MetaJson\PrettyResponse',
-              'std_err' => 'Rust\MetaJson\ErrorResponse',
+              'std_out' => 'Rust\Output\JsonOutput',
+              'std_err' => 'Rust\Output\JsonError',
               'pcheck'  => array(),
 			  ));
     
