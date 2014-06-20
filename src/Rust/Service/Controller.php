@@ -11,7 +11,7 @@ use Rust\Output\StandardErr;
 /**
  * This service controller provides the functionality to control which class methods
  * are executed. This class checks for json
- * {fpp:{},bar:{}} 
+ * {foo:{},bar:{}} 
  * 
  * You may extend this class or instanciate it. Either approach should work equally well.
  * It is best to create your own Service controller where you define your routes and 
@@ -41,8 +41,8 @@ class Controller {
               'std_out' => 'Rust\Output\JsonOutput',
               'std_err' => 'Rust\Output\JsonError',
               'pcheck'  => array()
-			  ),
-		array('rule'    => ';^.*iodoc.json$;',
+              ),
+        array('rule'    => ';^.*iodoc.json$;',
               'params'  => array('script_path'),
               'action'  => 'GET',
               'class'   => 'Rust\Service\Controller',
@@ -52,7 +52,7 @@ class Controller {
               'std_out' => 'Rust\Output\JsonOutput',
               'std_err' => 'Rust\Output\JsonError',
               'pcheck'  => array(),
-			  ));
+              ));
     
     /**
      * Our constructor takes on the task of defining the action and params
@@ -108,7 +108,7 @@ class Controller {
         $out          = empty($routes['std_out']) ? null    : $routes['std_out'];
         $err          = empty($routes['std_err']) ? null    : $routes['std_err'];
         $filters      = empty($routes['filters']) ? array() : $routes['filters'];
-		$this->routes = $routes;
+        $this->routes = $routes;
 
         if (empty($path) && !empty($_SERVER['SCRIPT_NAME'])) {
             $path = $_SERVER['SCRIPT_NAME'];
@@ -122,10 +122,10 @@ class Controller {
 
         if (!empty($routes['routes'])) {
             $allroutes = array_merge($routes['routes'], self::$docs);
-			$this->routes['routes'] = array_merge($routes['routes'], self::$docs);
+            $this->routes['routes'] = array_merge($routes['routes'], self::$docs);
         } else {
             $allroutes = array_merge($routes, self::docs);
-			$this->routes = array_merge($routes, self::docs);
+            $this->routes = array_merge($routes, self::docs);
         }
 
         foreach ($allroutes as $route) {
@@ -156,7 +156,7 @@ class Controller {
                  * NYT-S cookie.
                  */
                 if (!empty($filters)) {
-					// class is a reserved word
+                    // class is a reserved word
                     foreach ($filters as $clazz) {
                         $filter = new $clazz;
                         $ok     = $filter->filter($this->params);
@@ -175,15 +175,15 @@ class Controller {
                  * but don't override existing params.
                  */
                 $index = 0;
-				if (!empty($route['params'])) {
-					foreach ($route['params'] as $param) {
-						if (isset($this->params[$param])) {
-							$index++;
-						} else { 
-							$this->params[$param] = $matches[$index++];
-						}
-					}
-				}
+                if (!empty($route['params'])) {
+                    foreach ($route['params'] as $param) {
+                        if (isset($this->params[$param])) {
+                            $index++;
+                        } else { 
+                            $this->params[$param] = $matches[$index++];
+                        }
+                    }
+                }
 
                 /*
                  * The validator returns TRUE if ok, otherwise an array
@@ -228,7 +228,7 @@ class Controller {
             
     /**
      * One function to encapsulate handling the success or failure.
-	 * If we don't get an array as input, we just use $out.
+     * If we don't get an array as input, we just use $out.
      *
      * @param &$result array following array(200=>any) or array([0-9]{1,3}=>any)
      * @param &$out class name for success
@@ -237,25 +237,25 @@ class Controller {
      */
     public static function handleOut(&$result, &$out, &$err) {
         if ($out!=null && $err!=null) {
-			try {
-				if (is_array($result)) {
-					/*
-					 * Any 2xx series is a valid success.
-					 */
-					foreach ($result as $code=>$block) {
-						if (preg_match(';^2;',$code)) {
-							$res = new $out($code,$block);
-							return $result;
-						}
-						$res = new $err($code,$block);
-						return $result;
-					}
-				}
-				$res = new $out($code,$block);
-			} catch (Exception $e) {
-				print("EXCEPTION: More than likely there is a class naming issue in your route: $e");
-			}
-			
+            try {
+                if (is_array($result)) {
+                    /*
+                     * Any 2xx series is a valid success.
+                     */
+                    foreach ($result as $code=>$block) {
+                        if (preg_match(';^2;',$code)) {
+                            $res = new $out($code,$block);
+                            return $result;
+                        }
+                        $res = new $err($code,$block);
+                        return $result;
+                    }
+                }
+                $res = new $out($code,$block);
+            } catch (Exception $e) {
+                print("EXCEPTION: More than likely there is a class naming issue in your route: $e");
+            }
+            
         }
         return $result;
     }
@@ -299,10 +299,10 @@ class Controller {
         $data = array();
         foreach ($routes['routes'] as $route) {
             unset($item);
-			if (empty($route['rule'])) {
-				print_r($route);
-				continue;
-			}
+            if (empty($route['rule'])) {
+                print_r($route);
+                continue;
+            }
             $item['uri']      = $route['rule'];
             $item['method']   = $route['action'];
             $item['name']     = empty($route['name']) ? 'Name not set in the route.' : $route['name'];
@@ -318,7 +318,7 @@ class Controller {
             $end     = strlen($item['uri']);
             $pathres = array();
             $addre   = false;
-			$elem    = '';
+            $elem    = '';
             foreach (str_split($item['uri'],1) as $c) {
                 if ($c == '(') {
                     $addre = true;
@@ -369,28 +369,28 @@ class Controller {
         return array(ResponseCodes::GOOD=>$data);
     }
 
-	/**
+    /**
      * Creates documentation from the route(s)
      *
      */
     public function iodoc($routes) {
         $data = array();
 
-		$data['name']			= empty($routes['name']) ? 'UNNAMED NYTimes.com REST Service' : $routes['name'];
-		$data['protocol']		= empty($routes['protocol']) ? 'http' : $routes['protocol'];
-		$data['baseURL']		= empty($routes['baseUrl']) ? 'internal.du.nytimes.com' : $routes['baseUrl'];
-		$data['publicPath']		= '';
-		$data['privatePath']	= '';
-		$data['auth']			= '';
-		$data['methods']		= array();
+        $data['name']           = empty($routes['name']) ? 'UNNAMED NYTimes.com REST Service' : $routes['name'];
+        $data['protocol']       = empty($routes['protocol']) ? 'http' : $routes['protocol'];
+        $data['baseURL']        = empty($routes['baseUrl']) ? 'internal.du.nytimes.com' : $routes['baseUrl'];
+        $data['publicPath']     = '';
+        $data['privatePath']    = '';
+        $data['auth']           = '';
+        $data['methods']        = array();
 
         foreach ($routes['routes'] as $route) {
             unset($item);
-            $item['URI']				= empty($route['rule']) ? 'UNKNOWN' : $route['rule'];
-            $item['HTTPMethod']			= empty($route['action']) ? 'UNKNOWN' : $route['action'];
-            $item['MethodName']			= empty($route['name']) ? 'UNNAMED!' : $route['name'];
-            $item['Synopsis']			= empty($route['docs']) ? 'UNDOCUMENTED!.' : $route['docs'];
-            $item['RequiresOAuth']		= 'N';
+            $item['URI']                = empty($route['rule']) ? 'UNKNOWN' : $route['rule'];
+            $item['HTTPMethod']         = empty($route['action']) ? 'UNKNOWN' : $route['action'];
+            $item['MethodName']         = empty($route['name']) ? 'UNNAMED!' : $route['name'];
+            $item['Synopsis']           = empty($route['docs']) ? 'UNDOCUMENTED!.' : $route['docs'];
+            $item['RequiresOAuth']      = 'N';
 
             /*
              * Get the regex patterns from the path urls. Path urls let you define variables in the url
@@ -402,7 +402,7 @@ class Controller {
             $end     = strlen($item['URI']);
             $pathres = array();
             $addre   = false;
-			$elem    = '';
+            $elem    = '';
             foreach (str_split($item['URI'],1) as $c) {
                 if ($c == '(') {
                     $addre = true;
@@ -427,41 +427,41 @@ class Controller {
              * holder given that preg_match returns the entire string in position 0
              * when there is a match.
              */
-			$item['parameters'] = array();
+            $item['parameters'] = array();
             if (isset($route['params']) && 
                 is_array($route['params'])) {
                 $end = count($route['params']);
                 
                 for ($i = 1; $i < $end; ++$i) {
-					$item['parameters'][] = array( 'Name'        =>$route['params'][$i],
-												   'Type'        =>"string", 
-												   'Description' =>'The parameter is expected in the URL. Valid values defined as a php regex: '. $pathres[($i-1)],
-												   'Required'    =>'Y');
-				}
+                    $item['parameters'][] = array( 'Name'        =>$route['params'][$i],
+                                                   'Type'        =>"string", 
+                                                   'Description' =>'The parameter is expected in the URL. Valid values defined as a php regex: '. $pathres[($i-1)],
+                                                   'Required'    =>'Y');
+                }
             }
-	    
+        
             if (isset($route['pcheck'])) {
-				$params = $this->recurseParams($route['pcheck']);
-				foreach ($params as $param) {
-					$parm = array('Name' => $param['name'],
-								  'Required' => $param['is_required'] ? 'Y' : 'N'
-								  );
-		    
-					if (!empty($param['elements']) && is_array($param['elements'])) {
-						$parm['Description'] = 'JSON Object: ' . json_encode($param['elements']);
-					} else {
-						if ($param['is_validated']) {
-							$parm['Description'] = 'Valid values defined as a php regex: ' . $param['regex'];
-						} else {
-							$parm['Description'] = 'The value is unchecked. See the method documentation for notes.';
-						}
-					}
-					if ($param['is_repeated']) {
-						$parm['Description'] .= ' This value is repeated.';
-					}
-					$item['parameters'][] = $parm;
-					unset($parm);
-				}
+                $params = $this->recurseParams($route['pcheck']);
+                foreach ($params as $param) {
+                    $parm = array('Name' => $param['name'],
+                                  'Required' => $param['is_required'] ? 'Y' : 'N'
+                                  );
+            
+                    if (!empty($param['elements']) && is_array($param['elements'])) {
+                        $parm['Description'] = 'JSON Object: ' . json_encode($param['elements']);
+                    } else {
+                        if ($param['is_validated']) {
+                            $parm['Description'] = 'Valid values defined as a php regex: ' . $param['regex'];
+                        } else {
+                            $parm['Description'] = 'The value is unchecked. See the method documentation for notes.';
+                        }
+                    }
+                    if ($param['is_repeated']) {
+                        $parm['Description'] .= ' This value is repeated.';
+                    }
+                    $item['parameters'][] = $parm;
+                    unset($parm);
+                }
             }
             $data['methods'][] = $item;
         }
