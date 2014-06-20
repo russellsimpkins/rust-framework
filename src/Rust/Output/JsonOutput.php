@@ -4,7 +4,7 @@ namespace Rust\Output;
 /**
  * A simple class that will output your data as a JSON string
  */
-class JsonOuput {
+class JsonOutput {
 
     public function __construct($code=200, $data) {
         @header("HTTP/1.0 $code");
