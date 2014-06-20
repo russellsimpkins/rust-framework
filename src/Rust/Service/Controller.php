@@ -34,23 +34,23 @@ class Controller {
         array('rule'    => ';^.*help.json$;',
               'params'  => array('script_path'),
               'action'  => 'GET',
-              'class'   => 'NYTD\Rust\Service\Controller',
+              'class'   => 'Rust\Service\Controller',
               'method'  => 'help',
               'name'    => 'Help method',
               'docs'    => 'Help method describes all of the features the api supports.',
-              'std_out' => 'NYTD\Rust\MetaJson\PrettyResponse',
-              'std_err' => 'NYTD\Rust\MetaJson\ErrorResponse',
+              'std_out' => 'Rust\MetaJson\PrettyResponse',
+              'std_err' => 'Rust\MetaJson\ErrorResponse',
               'pcheck'  => array()
 			  ),
 		array('rule'    => ';^.*iodoc.json$;',
               'params'  => array('script_path'),
               'action'  => 'GET',
-              'class'   => 'NYTD\Rust\Service\Controller',
+              'class'   => 'Rust\Service\Controller',
               'method'  => 'iodoc',
               'name'    => 'iodocs method',
               'docs'    => 'iodcs method describes all of the features the api supports in iodoc format.',
-              'std_out' => 'NYTD\Rust\MetaJson\PrettyResponse',
-              'std_err' => 'NYTD\Rust\MetaJson\ErrorResponse',
+              'std_out' => 'Rust\MetaJson\PrettyResponse',
+              'std_err' => 'Rust\MetaJson\ErrorResponse',
               'pcheck'  => array(),
 			  ));
     
@@ -202,7 +202,7 @@ class Controller {
                 $method  = $route['method'];
                 $handler = new $hclass;
 
-                if (($method == 'help' || $method == 'iodoc') && $hclass == 'NYTD\Rust\Service\Controller') {
+                if (($method == 'help' || $method == 'iodoc') && $hclass == 'Rust\Service\Controller') {
                     /*
                      * a special case to spit out the route data sharing what services are provided
                      */
@@ -465,7 +465,7 @@ class Controller {
             }
             $data['methods'][] = $item;
         }
-        return array(\NYTD\Rust\HTTP\ResponseCodes::GOOD=>$data);
+        return array(\Rust\HTTP\ResponseCodes::GOOD=>$data);
     }
 
     /**
