@@ -4,6 +4,8 @@ use Rust\HTTP\ResponseCodes;
 
 /**
  * This is a utility class I created to make calling other RESTFul requests easier for me.
+ * I usually set an php.ini variable environment with dev, staging, production and only 
+ * validate SSL certificates if were in environment==production
  */
 class CurlRequest {
 
@@ -20,8 +22,8 @@ class CurlRequest {
         if (empty($endpoint)) {
             return array(ResponseCodes::MISSING_PARAM=>'Missing server endpoint. This is the URL you intended to call and it was empty.');
         }
-
-        $verifySSL = get_cfg_var('enviornment') == 'production' ? true : false;
+        
+        $verifySSL = get_cfg_var('environment') == 'production' ? true : false;
         $curl      = curl_init();
 
         curl_setopt($curl, CURLOPT_URL, $endpoint);
