@@ -124,8 +124,8 @@ class Controller {
             $allroutes = array_merge($routes['routes'], self::$docs);
             $this->routes['routes'] = array_merge($routes['routes'], self::$docs);
         } else {
-            $allroutes = array_merge($routes, self::docs);
-            $this->routes = array_merge($routes, self::docs);
+            $allroutes = array_merge($routes, self::$docs);
+            $this->routes = array_merge($routes, self::$docs);
         }
 
         foreach ($allroutes as $route) {
@@ -243,8 +243,8 @@ class Controller {
                      * Any 2xx series is a valid success.
                      */
                     foreach ($result as $code=>$block) {
-                        if (preg_match(';^2;',$code)) {
-                            $res = new $out($code,$block);
+                        if (preg_match(';^2;', $code)) {
+                            $res = new $out($code, $block);
                             return $result;
                         }
                         $res = new $err($code,$block);
@@ -300,7 +300,6 @@ class Controller {
         foreach ($routes['routes'] as $route) {
             unset($item);
             if (empty($route['rule'])) {
-                print_r($route);
                 continue;
             }
             $item['uri']      = $route['rule'];
@@ -347,10 +346,9 @@ class Controller {
                 is_array($route['params'])) {
                 $end                     = count($route['params']);
                 $item['path_parameters'] = array();
-                
                 for ($i = 1; $i < $end; ++$i) {
                     $item['path_parameters'][$route['params'][$i]] = array( 'name'        =>$route['params'][$i], 
-                                                                            'regex'       =>$pathres[($i-1)], 
+                                                                            'regex'       =>@$pathres[($i-1)], 
                                                                             'is_required' =>true, 
                                                                             'is_validated'=>true);
                 }
