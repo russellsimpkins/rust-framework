@@ -2,8 +2,8 @@
 namespace Rust\Filter;
 use Rust\HTTP;
 /**
- * This is an example to show how you might filter a request. This will check to see
- * if the params has fraud=true or fraud=false.
+ * This is an example of how you might filter a request. This will check to see
+ * if the params has fraud===TRUE
  */
 class FraudCheck {
 
