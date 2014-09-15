@@ -85,7 +85,7 @@ class Controller {
                 $this->action = $action;
                 break;
             }
-        } else {
+       } else {
             $this->action = $action;
             $this->params = self::decodeInput($params);
         }
@@ -121,10 +121,10 @@ class Controller {
         }
 
         if (!empty($routes['routes'])) {
-            $allroutes = array_merge($routes['routes'], self::$docs);
+            $allroutes              = array_merge($routes['routes'], self::$docs);
             $this->routes['routes'] = array_merge($routes['routes'], self::$docs);
         } else {
-            $allroutes = array_merge($routes, self::$docs);
+            $allroutes    = array_merge($routes, self::$docs);
             $this->routes = array_merge($routes, self::$docs);
         }
 
@@ -138,7 +138,7 @@ class Controller {
             if (preg_match($route['rule'], $path, $matches)) {
                 $found = true;
 
-                if ($this->action <> $route['action']) {
+                if ($this->matchAction($this->action, $route['action'])) {
                     continue;
                 }
 
@@ -152,8 +152,8 @@ class Controller {
                 /*
                  * Run any filters. Filters support pre-processing such as
                  * validating the cookies. Passing in $this->params permits
-                 * the filters to set variables, like getting the id from the
-                 * NYT-S cookie.
+                 * the filters to set variables, like getting the id from a
+                 * cookie.
                  */
                 if (!empty($filters)) {
                     // class is a reserved word
@@ -247,15 +247,14 @@ class Controller {
                             $res = new $out($code, $block);
                             return $result;
                         }
-                        $res = new $err($code,$block);
+                        $res = new $err($code, $block);
                         return $result;
                     }
                 }
                 $res = new $out($code,$block);
             } catch (Exception $e) {
-                print("EXCEPTION: More than likely there is a class naming issue in your route: $e");
+                print("EXCEPTION: $e. Most likely cause is a class naming issue in your route.");
             }
-            
         }
         return $result;
     }
@@ -545,7 +544,7 @@ class Controller {
      * @param $action - GET/PUT/POST/DELETE
      */
     public function setAction($action) {
-        $this->action = action;
+        $this->action = $action;
     }
 
     /**
@@ -554,5 +553,20 @@ class Controller {
      */
     public function getAction() {
         return $this->action;
+    }
+
+    /**
+     * This method adds re delims around the needle so that
+     * preg_match works. 
+     * Added to match the current HTTP Request type e.g. GET, PUT etc
+     * against the route defined action which lets you support
+     * more than one HTTP Request method
+     *
+     * @returns 1 if match, 0 if no match FALSE if an error occurred
+     * @see http://php.net/manual/en/function.preg-match.php
+     */
+    public function matchAction(&$needle, &$haystack) {
+        $re = ";${needle};";
+        return preg_match($re,$haystack);
     }
 }
