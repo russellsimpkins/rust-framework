@@ -1,6 +1,6 @@
 <?php
 namespace Rust\Filter;
-use Rust\HTTP;
+use Rust\HTTP\ResponseCodes;
 /**
  * This is an example of how you might filter a request. This will check to see
  * if the params has fraud===TRUE
