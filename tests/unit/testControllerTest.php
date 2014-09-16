@@ -170,19 +170,22 @@ ROUTE_DEFINITION;
         $this->assertNotNull($help);
     }
 
-    public function testHandlOut() 
+    /**
+     * @covers Rust\Service\Controller::handleOut
+     */
+    public function testhandleOut() 
     {
         $c = new Controller(array(),'GET');
         $param[200] = '{"status": "ok"}';
         $out = 'Rust\Output\NullOut';
         $err = 'Rust\Output\NullErr';
-        $c->handleOut($param, $out, $err);
+        Controller::handleOut($param, $out, $err);
         $param[500] = '{"status": "error"}';
         $out = 'Rust\Output\NullOut';
         $err = 'Rust\Output\NullErr';
-        $c->handleOut($param, $out, $err);
+        Controller::handleOut($param, $out, $err);
         $err = 'Rust\Output\NullErrs';
         $param = 'holy moly';
-        $c->handleOut($param, $out, $err);
+        Controller::handleOut($param, $out, $err);
     }
 }
