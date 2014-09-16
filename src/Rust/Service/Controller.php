@@ -251,7 +251,7 @@ class Controller {
                         return $result;
                     }
                 }
-                $res = new $out($code,$block);
+                $res = new $out(ResponseCodes::GOOD,$result);
             } catch (Exception $e) {
                 print("EXCEPTION: $e. Most likely cause is a class naming issue in your route.");
             }
