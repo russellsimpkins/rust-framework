@@ -51,7 +51,7 @@ class Controller {
               'docs'    => 'iodcs method describes all of the features the api supports in iodoc format.',
               'std_out' => 'Rust\Output\JsonOutput',
               'std_err' => 'Rust\Output\JsonError',
-              'pcheck'  => array(),
+              'pcheck'  => array()
               ));
     
     /**
@@ -138,7 +138,7 @@ class Controller {
             if (preg_match($route['rule'], $path, $matches)) {
                 $found = true;
 
-                if ($this->matchAction($this->action, $route['action'])) {
+                if (1 != $this->matchAction($this->action, $route['action'])) {
                     continue;
                 }
 
@@ -373,15 +373,16 @@ class Controller {
     public function iodoc($routes) {
         $data = array();
 
-        $data['name']           = empty($routes['name']) ? 'UNNAMED NYTimes.com REST Service' : $routes['name'];
+        $data['name']           = empty($routes['name']) ? 'UNNAMED REST Service' : $routes['name'];
         $data['protocol']       = empty($routes['protocol']) ? 'http' : $routes['protocol'];
-        $data['baseURL']        = empty($routes['baseUrl']) ? 'internal.du.nytimes.com' : $routes['baseUrl'];
+        $data['baseURL']        = empty($routes['baseUrl']) ? 'localhost' : $routes['baseUrl'];
         $data['publicPath']     = '';
         $data['privatePath']    = '';
         $data['auth']           = '';
         $data['methods']        = array();
-
+        
         foreach ($routes['routes'] as $route) {
+            
             unset($item);
             $item['URI']                = empty($route['rule']) ? 'UNKNOWN' : $route['rule'];
             $item['HTTPMethod']         = empty($route['action']) ? 'UNKNOWN' : $route['action'];
@@ -430,9 +431,14 @@ class Controller {
                 $end = count($route['params']);
                 
                 for ($i = 1; $i < $end; ++$i) {
+                    if (empty($pathres[ $i-1 ]) ) {
+                        $des = 'ERROR - the URL is missing a regex for the parameter. e.g. /svc/([0-9])';
+                    } else {
+                        $des = "The parameter is expected in the URL. Valid values defined as a php regex: ${pathres[($i-1)]}";
+                    }
                     $item['parameters'][] = array( 'Name'        =>$route['params'][$i],
-                                                   'Type'        =>"string", 
-                                                   'Description' =>'The parameter is expected in the URL. Valid values defined as a php regex: '. $pathres[($i-1)],
+                                                   'Type'        =>'string', 
+                                                   'Description' =>$des,
                                                    'Required'    =>'Y');
                 }
             }
