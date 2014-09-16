@@ -5,8 +5,6 @@ trait JsonTraits {
     function getJsonError() {
         if (json_last_error() != 0) {
             switch (json_last_error()) {
-            case JSON_ERROR_NONE:
-                return 'No error.';
             case JSON_ERROR_DEPTH:
                 return 'Maximum stack depth exceeded.';
             case JSON_ERROR_STATE_MISMATCH:
