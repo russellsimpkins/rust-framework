@@ -84,10 +84,16 @@ class Validator {
                 if ($c == '#') {
                     $repeating = false;
                     $rule      = substr($rule,1);
-                    foreach ($params[$rule] as $data) {
-                        $valid = self::validate($re, $data);
-                        if ($valid !== true) {
-                            return $valid;
+                    if (!empty($params[$rule])) {
+                        foreach ($params[$rule] as $data) {
+                            $valid = self::validate($re, $data);
+                            if ($valid !== true) {
+                                return $valid;
+                            }
+                        }
+                    } else {
+                        if ($missingOk == false) {
+                            return array(ResponseCodes::MISSING_PARAM=>"Parameter <{$rule}> value was missing and is required for this api call.");
                         }
                     }
                     continue;
