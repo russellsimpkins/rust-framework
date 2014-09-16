@@ -56,7 +56,7 @@ class Controller {
     
     /**
      * Our constructor takes on the task of defining the action and params
-     *
+     * @codeCoverageIgnore
      * @param $params - if this is set, we will not look at the REQUEST_METHOD and expect $action to be passed as well
      * @param $action - set this when setting $params
      */
@@ -94,7 +94,7 @@ class Controller {
     /**
      * The run function normally expects no parameters, adding url and params
      * to support testing with simple test.
-     *
+     * @codeCoverageIgnore
      * @param $routes  - the routes supported, intended to be sent from classes extending this class
      * @param $path    - support unit tests
      * @param $params  - support unit tests
