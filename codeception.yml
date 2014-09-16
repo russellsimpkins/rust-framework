@@ -14,6 +14,9 @@ coverage:
     whitelist:
       include: 
         - src/*
+      exclude:
+        - src/Rust/Output/*
+        - src/Rust/HTTP/*
     blacklist:
       include:
         - vendor/*
