@@ -43,7 +43,7 @@ class testControllerTest extends \Codeception\TestCase\Test
 	},
     {
         "rule"  : ";/svc/unit;",
-        "params": ["script_path","foo","bar"],
+        "params": ["script_path"],
         "action": "GET",
 	    "class" : "Rust\\\\Service\\\\Controler",
 	    "method": "unit",
@@ -161,6 +161,28 @@ ROUTE_DEFINITION;
         $c = new Controller($this->params,'GET');
         $help   = $c->help($this->routes);
         $this->assertNotNull($help);
+    }
 
+    public function testRun()
+    {
+        $c = new Controller($this->params,'GET');
+        $help   = $c->run($this->routes, '/svc/unit', $this->params,'GET');
+        $this->assertNotNull($help);
+    }
+
+    public function testHandlOut() 
+    {
+        $c = new Controller(array(),'GET');
+        $param[200] = '{"status": "ok"}';
+        $out = 'Rust\Output\NullOut';
+        $err = 'Rust\Output\NullErr';
+        $c->handleOut($param, $out, $err);
+        $param[500] = '{"status": "error"}';
+        $out = 'Rust\Output\NullOut';
+        $err = 'Rust\Output\NullErr';
+        $c->handleOut($param, $out, $err);
+        $err = 'Rust\Output\NullErrs';
+        $param = 'holy moly';
+        $c->handleOut($param, $out, $err);
     }
 }
