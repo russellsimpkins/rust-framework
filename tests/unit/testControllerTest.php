@@ -72,9 +72,7 @@ ROUTE_DEFINITION;
     {
     }
 
-    /**
-     * @covers Rust\Service\Controller
-     */
+
     public function testMatchMethod()
     {
         $method="GET";
@@ -137,7 +135,7 @@ ROUTE_DEFINITION;
         $c->__construct();
         $this->assertNotNull($c);
         $this->assertEquals('GET',$c->getAction());
-        $c->run($this->routes,'/svc/help.json',$this->params);
+        
     }
 
     public function testRecurseParams() 
@@ -154,7 +152,7 @@ ROUTE_DEFINITION;
         $c = new Controller($this->params,'GET');
         $iodocs = $c->iodoc($this->routes);
         $this->assertNotNull($iodocs);
-        fwrite(STDOUT, print_r($iodocs,true));
+        //fwrite(STDOUT, print_r($iodocs,true));
     }
 
     public function testHelp() 
