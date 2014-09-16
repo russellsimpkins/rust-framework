@@ -230,6 +230,7 @@ class Controller {
      * One function to encapsulate handling the success or failure.
      * If we don't get an array as input, we just use $out.
      *
+     * @codeCoverageIgnore
      * @param &$result array following array(200=>any) or array([0-9]{1,3}=>any)
      * @param &$out class name for success
      * @param &$err class name for error
@@ -293,6 +294,7 @@ class Controller {
     /**
      * Creates documentation from the route(s)
      *
+     * @codeCoverageIgnore
      */
     public function help($routes) {
         $data = array();
@@ -369,6 +371,7 @@ class Controller {
     /**
      * Creates documentation from the route(s)
      *
+     * @codeCoverageIgnore
      */
     public function iodoc($routes) {
         $data = array();
