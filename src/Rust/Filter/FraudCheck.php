@@ -13,9 +13,9 @@ class FraudCheck {
      * @return TRUE if filter passes test, array if filter fails
      */
     public function filter(&$params) {
-	if (!empty($params['fraud']) && $params['fraud'] === TRUE) {
+        if (!empty($params['fraud']) && $params['fraud'] === TRUE) {
             return array(ResponseCodes::ERROR=>'Reason code: Fradulant request');
-	}
+        }
         return TRUE;
     }
 }
