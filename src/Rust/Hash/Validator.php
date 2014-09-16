@@ -30,7 +30,7 @@ class Validator {
     /**
      * A utility function to validate input parameters.
      *
-     * @param &$rules  - has of name value pairs where the value is a regex
+     * @param &$rules  - hash of name value pairs where the value is a regex
      * @param &$params - the data to validate in name value pairs.
      * @returns        - nothing but will throw errors if validation fails
      */
