@@ -135,7 +135,16 @@ class Controller {
             /*
              * only execute if the uri matches the rule and the action
              */
-            if (preg_match($route['rule'], $path, $matches)) {
+            if (is_array($route['rule'])) {
+                foreach($route['rule'] as $rule) {
+                    if ($matched = preg_match($rule, $path, $matches)) {
+                        break;
+                    }
+                }
+            } else {
+                $matched = preg_match($route['rule'], $path, $matches);
+            }
+            if ($matched) {
                 $found = true;
 
                 if (1 != $this->matchAction($this->action, $route['action'])) {
@@ -179,8 +188,10 @@ class Controller {
                     foreach ($route['params'] as $param) {
                         if (isset($this->params[$param])) {
                             $index++;
-                        } else { 
-                            $this->params[$param] = $matches[$index++];
+                        } else {
+                            if (!empty($matches[$index])) {
+                                $this->params[$param] = $matches[$index++];
+                            }
                         }
                     }
                 }
@@ -200,7 +211,11 @@ class Controller {
                  */
                 $hclass  = $route['class'];
                 $method  = $route['method'];
-                $handler = new $hclass;
+                if (!empty($route['config']) && !empty($route['config']['class'])) {
+                    $handler = new $hclass($route['config']['class']);
+                } else {
+                    $handler = new $hclass;
+                }
 
                 if (($method == 'help' || $method == 'iodoc') && $hclass == 'Rust\Service\Controller') {
                     /*
@@ -368,6 +383,95 @@ class Controller {
         return array(ResponseCodes::GOOD=>$data);
     }
 
+    public function iodocMethod($rule, &$route) {
+        $item = array();
+        $item['URI']           = $rule;
+        $item['HTTPMethod']    = empty($route['action']) ? 'UNKNOWN'        : $route['action'];
+        $item['MethodName']    = empty($route['name'])   ? 'UNNAMED!'       : $route['name'];
+        $item['Synopsis']      = empty($route['docs'])   ? 'UNDOCUMENTED!.' : $route['docs'];
+        $item['RequiresOAuth'] = 'N';
+
+        /*
+         * Get the regex patterns from the path urls. Path urls let you define variables in the url
+         * e.g. /some/( valid re )/svc/([a-z]{1,20})/example.json 
+         * The next block looks to parse out the ( ) and build up the expressions in $pathres. $pathres
+         * variables get named in the route field "params". Users should ONLY name path params in "params"
+         * $pathres == path regex patterns
+         */
+        $end     = strlen($item['URI']);
+        $pathres = array();
+        $addre   = false;
+        $elem    = '';
+        foreach (str_split($item['URI'],1) as $c) {
+            if ($c == '(') {
+                $addre = true;
+                $elem .= $c;
+                continue;
+            }
+            if ($c == ')') {
+                $addre     = false;
+                $elem     .= $c;
+                $pathres[] = $elem;
+                $elem      = '';
+                continue;
+            }
+            if ($addre) {
+                $elem .= $c;
+            }
+        }
+        
+        /*
+         * Paths can have params that can have names. We want to grab all
+         * but the first path parameter names since the first is just a place
+         * holder given that preg_match returns the entire string in position 0
+         * when there is a match.
+         */
+        $item['parameters'] = array();
+        if (isset($route['params']) && 
+            is_array($route['params'])) {
+            $end = count($route['params']);
+            
+            for ($i = 1; $i < $end; ++$i) {
+                if (empty($pathres[ $i-1 ]) ) {
+                    $des = 'ERROR - the URL is missing a regex for the parameter. e.g. /svc/([0-9])';
+                    // I added support for using multiple rules. So, I may have more parameters defined
+                    // than are in the url. 
+                    continue;
+                } else {
+                    $des = "The parameter is expected in the URL. Valid values defined as a php regex: ${pathres[($i-1)]}";
+                }
+                $item['parameters'][] = array( 'Name'        =>$route['params'][$i],
+                                               'Type'        =>'string', 
+                                               'Description' =>$des,
+                                               'Required'    =>'Y');
+            }
+        }
+        
+        if (isset($route['pcheck'])) {
+            $params = $this->recurseParams($route['pcheck']);
+            foreach ($params as $param) {
+                $parm = array('Name' => $param['name'],
+                              'Required' => $param['is_required'] ? 'Y' : 'N'
+                              );
+                
+                if (!empty($param['elements']) && is_array($param['elements'])) {
+                    $parm['Description'] = 'JSON Object: ' . json_encode($param['elements']);
+                } else {
+                    if ($param['is_validated']) {
+                        $parm['Description'] = 'Valid values defined as a php regex: ' . $param['regex'];
+                    } else {
+                        $parm['Description'] = 'The value is unchecked. See the method documentation for notes.';
+                    }
+                }
+                if ($param['is_repeated']) {
+                    $parm['Description'] .= ' This value is repeated.';
+                }
+                $item['parameters'][] = $parm;
+                unset($parm);
+            }
+        }
+        return $item;
+    }
     /**
      * Creates documentation from the route(s)
      *
@@ -376,100 +480,31 @@ class Controller {
     public function iodoc($routes) {
         $data = array();
 
-        $data['name']           = empty($routes['name']) ? 'UNNAMED REST Service' : $routes['name'];
-        $data['protocol']       = empty($routes['protocol']) ? 'http' : $routes['protocol'];
-        $data['baseURL']        = empty($routes['baseUrl']) ? 'localhost' : $routes['baseUrl'];
-        $data['publicPath']     = '';
-        $data['privatePath']    = '';
-        $data['auth']           = '';
-        $data['methods']        = array();
+        $data['name']        = empty($routes['name']) ? 'UNNAMED REST Service' : $routes['name'];
+        $data['protocol']    = empty($routes['protocol']) ? 'http' : $routes['protocol'];
+        $data['baseURL']     = empty($routes['baseUrl']) ? 'localhost' : $routes['baseUrl'];
+        $data['publicPath']  = '';
+        $data['privatePath'] = '';
+        $data['auth']        = '';
+        $data['methods']     = array();
         
-        foreach ($routes['routes'] as $route) {
-            
-            unset($item);
-            $item['URI']                = empty($route['rule']) ? 'UNKNOWN' : $route['rule'];
-            $item['HTTPMethod']         = empty($route['action']) ? 'UNKNOWN' : $route['action'];
-            $item['MethodName']         = empty($route['name']) ? 'UNNAMED!' : $route['name'];
-            $item['Synopsis']           = empty($route['docs']) ? 'UNDOCUMENTED!.' : $route['docs'];
-            $item['RequiresOAuth']      = 'N';
-
-            /*
-             * Get the regex patterns from the path urls. Path urls let you define variables in the url
-             * e.g. /some/( valid re )/svc/([a-z]{1,20})/example.json 
-             * The next block looks to parse out the ( ) and build up the expressions in $pathres. $pathres
-             * variables get named in the route field "params". Users should ONLY name path params in "params"
-             * $pathres == path regex patterns
-             */
-            $end     = strlen($item['URI']);
-            $pathres = array();
-            $addre   = false;
-            $elem    = '';
-            foreach (str_split($item['URI'],1) as $c) {
-                if ($c == '(') {
-                    $addre = true;
-                    $elem .= $c;
-                    continue;
-                }
-                if ($c == ')') {
-                    $addre     = false;
-                    $elem     .= $c;
-                    $pathres[] = $elem;
-                    $elem      = '';
-                    continue;
-                }
-                if ($addre) {
-                    $elem .= $c;
-                }
-            }
-
-            /*
-             * Paths can have params that can have names. We want to grab all
-             * but the first path parameter names since the first is just a place
-             * holder given that preg_match returns the entire string in position 0
-             * when there is a match.
-             */
-            $item['parameters'] = array();
-            if (isset($route['params']) && 
-                is_array($route['params'])) {
-                $end = count($route['params']);
+        foreach ($routes['routes'] as &$route) {
+            $item = "";
+            if (is_array($route['rule'])) {
                 
-                for ($i = 1; $i < $end; ++$i) {
-                    if (empty($pathres[ $i-1 ]) ) {
-                        $des = 'ERROR - the URL is missing a regex for the parameter. e.g. /svc/([0-9])';
-                    } else {
-                        $des = "The parameter is expected in the URL. Valid values defined as a php regex: ${pathres[($i-1)]}";
-                    }
-                    $item['parameters'][] = array( 'Name'        =>$route['params'][$i],
-                                                   'Type'        =>'string', 
-                                                   'Description' =>$des,
-                                                   'Required'    =>'Y');
+                foreach ($route['rule'] as $rule) {
+                    $item = $this->iodocMethod($rule, $route);
+                    $data['methods'][] = $item;
                 }
-            }
-        
-            if (isset($route['pcheck'])) {
-                $params = $this->recurseParams($route['pcheck']);
-                foreach ($params as $param) {
-                    $parm = array('Name' => $param['name'],
-                                  'Required' => $param['is_required'] ? 'Y' : 'N'
-                                  );
-            
-                    if (!empty($param['elements']) && is_array($param['elements'])) {
-                        $parm['Description'] = 'JSON Object: ' . json_encode($param['elements']);
-                    } else {
-                        if ($param['is_validated']) {
-                            $parm['Description'] = 'Valid values defined as a php regex: ' . $param['regex'];
-                        } else {
-                            $parm['Description'] = 'The value is unchecked. See the method documentation for notes.';
-                        }
-                    }
-                    if ($param['is_repeated']) {
-                        $parm['Description'] .= ' This value is repeated.';
-                    }
-                    $item['parameters'][] = $parm;
-                    unset($parm);
+            } else {
+                if (empty($route['rule'])) {
+                    $rule = 'MISSING URI';
+                } else {
+                    $rule = $route['rule'];
                 }
+                $item = $this->iodocMethod($rule, $route);
+                $data['methods'][] = $item;
             }
-            $data['methods'][] = $item;
         }
         return array(\Rust\HTTP\ResponseCodes::GOOD=>$data);
     }
