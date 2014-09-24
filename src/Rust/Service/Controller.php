@@ -174,7 +174,7 @@ class Controller {
                          * a filter will return TRUE, nothing if all went well
                          */
                         if ($ok !== TRUE) {
-                            return self::handleOut($ok, $out, $err);
+                            return $this->handleOut($ok, $out, $err);
                         }
                     }
                 }
@@ -202,7 +202,7 @@ class Controller {
                 if (!empty($route['pcheck'])) {
                     $valid = Validator::validate($route['pcheck'], $this->params);
                     if (is_array($valid)) {
-                        return self::handleOut($valid, $out, $err);
+                        return $this->handleOut($valid, $out, $err);
                     }
                 }
 
@@ -225,7 +225,7 @@ class Controller {
                 } else {
                     $result = $handler->$method($this->params);
                 }
-                return self::handleOut($result, $out, $err);
+                return $this->handleOut($result, $out, $err);
             }
         }
 
@@ -233,12 +233,10 @@ class Controller {
          * If we found a matching URL but no supported method, send 405 else 404
          */
         if ($found) {
-            return self::handleOut($notsupported, $out, $err);
+            return $this->handleOut($notsupported, $out, $err);
         }
-
-        $out='Rust\Output\JsonOutput';
-        $err='Rust\Output\JsonError';
-        return self::handleOut($notfound, $out, $err);
+       
+        return $this->handleOut($notfound, $out, $err);
     }
             
     /**
@@ -251,7 +249,7 @@ class Controller {
      * @param &$err class name for error
      * @return array or null - will write to out or err if not null
      */
-    public static function handleOut(&$result, &$out, &$err) {
+    public function handleOut(&$result, &$out, &$err) {
         if ($out!=null && $err!=null) {
             try {
                 if (is_array($result)) {
@@ -383,7 +381,14 @@ class Controller {
         return array(ResponseCodes::GOOD=>$data);
     }
 
-    public function iodocMethod($rule, &$route) {
+    /**
+     * This function will generate iodoc method information
+     *
+     * @codeCoverageIgnore
+     * @param - rule - the rule to write
+     * @param - route - the route information
+     */
+    private function iodocMethod($rule, &$route) {
         $item = array();
         $item['URI']           = $rule;
         $item['HTTPMethod']    = empty($route['action']) ? 'UNKNOWN'        : $route['action'];
