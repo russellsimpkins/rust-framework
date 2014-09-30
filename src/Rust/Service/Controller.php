@@ -53,7 +53,7 @@ class Controller {
               'std_err' => 'Rust\Output\JsonError',
               'pcheck'  => array()
               ));
-    
+    var $_path;
     /**
      * Our constructor takes on the task of defining the action and params
      * @codeCoverageIgnore
@@ -111,9 +111,9 @@ class Controller {
         $this->routes = $routes;
 
         if (empty($path) && !empty($_SERVER['SCRIPT_NAME'])) {
-            $path = $_SERVER['SCRIPT_NAME'];
+            $path = $_SERVER['SCRIPT_NAME'];            
         }
-
+        $this->_path = $path;
         if (!empty($params)) {
             $this->params = $params;
         } elseif (empty($this->params)) {
@@ -251,6 +251,10 @@ class Controller {
      */
     public function handleOut(&$result, &$out, &$err) {
         if ($out!=null && $err!=null) {
+            $options = empty($out['config'])   ? array()       : $out['config'];
+            $out     = is_array($out)          ? $out['class'] : $out;
+            $err     = is_array($err)          ? $err['class'] : $err;
+            
             try {
                 if (is_array($result)) {
                     /*
@@ -258,14 +262,26 @@ class Controller {
                      */
                     foreach ($result as $code=>$block) {
                         if (preg_match(';^2;', $code)) {
-                            $res = new $out($code, $block);
-                            return $result;
+                            if (empty($options)) {
+                                $res = new $out($code, $block, $this->_path);
+                            } else {
+                                $res = new $out($code, $block, $this->_path, $options);
+                            }
+                        } else {
+                            if (empty($options)) {
+                                $res = new $err($code, $block, $this->_path);
+                            } else {
+                                $res = new $err($code, $block, $this->_path, $options);
+                            }
                         }
-                        $res = new $err($code, $block);
                         return $result;
                     }
                 }
-                $res = new $out(ResponseCodes::GOOD,$result);
+                if (empty($options)) {
+                    $res = new $out(ResponseCodes::GOOD, $result);
+                } else {
+                    $res = new $out(ResponseCodes::GOOD, $result, $options);
+                }
             } catch (Exception $e) {
                 print("EXCEPTION: $e. Most likely cause is a class naming issue in your route.");
             }

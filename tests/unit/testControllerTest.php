@@ -1,4 +1,8 @@
 <?php
+function printHeaders($headers='') {
+    fwrite(STDOUT, print_r($headers,true));
+}
+
 use Codeception\Util\Stub;
 use Rust\Service\Controller;
 class testControllerTest extends \Codeception\TestCase\Test
@@ -62,7 +66,31 @@ class testControllerTest extends \Codeception\TestCase\Test
                   "*#offer_meta_data"  : {"*PRD_ID":"/^([0-9]{0,15})$/"},
                   "*!ignore"       :""
         }
-    }]
+    },
+    {
+        "rule"  : ";/svc/output/test.xml;",
+        "params": ["script_path"],
+        "action": "GET",
+	    "class" : "Rust\\\\Mock\\\\DataProducer",
+	    "method": "produceSampleSet",
+	    "name"  : "Test valid xml",
+	    "docs"  : "Testing valid xml.",
+        "std_out": {"class": "Rust\\\\Output\\\\DualOutput",
+                    "config": {"xml_serializer_options":{"array_names_table":{"cards":"card"},"attr_names_table":{"card":"suit"}}}},
+        "std_err": {"class": "Rust\\\\Output\\\\DualOutput"}
+    },
+    {
+        "rule"  : ";/svc/output/testError.xml;",
+        "params": ["script_path"],
+        "action": "GET",
+	    "class" : "Rust\\\\Mock\\\\DataProducer",
+	    "method": "produceErrorSet",
+	    "name"  : "Test valid xml",
+	    "docs"  : "Testing valid xml.",
+        "std_out": {"class": "Rust\\\\Output\\\\DualOutput",
+                    "config": {"xml_serializer_options":{"array_names_table":{"cards":"card"},"attr_names_table":{"card":"suit"}}}},
+        "std_err": {"class": "Rust\\\\Output\\\\DualOutput"}
+      }]
 }
 ROUTE_DEFINITION;
         $this->routes = json_decode($this->routes, true);
@@ -173,19 +201,45 @@ ROUTE_DEFINITION;
     /**
      * @covers Rust\Service\Controller::handleOut
      */
-    public function testhandleOut() 
+    public function testHandleOut() 
     {
         $c = new Controller(array(),'GET');
         $param[200] = '{"status": "ok"}';
         $out = 'Rust\Output\NullOut';
         $err = 'Rust\Output\NullErr';
-        Controller::handleOut($param, $out, $err);
+        $c->handleOut($param, $out, $err);
         $param[500] = '{"status": "error"}';
         $out = 'Rust\Output\NullOut';
         $err = 'Rust\Output\NullErr';
-        Controller::handleOut($param, $out, $err);
+        $c->handleOut($param, $out, $err);
         $err = 'Rust\Output\NullErrs';
         $param = 'holy moly';
-        Controller::handleOut($param, $out, $err);
+        $c->handleOut($param, $out, $err);
+    }
+
+    public function testXmlHandler()
+    {
+        global $_SERVER;
+        $_SERVER['SCRIPT_NAME'] = '/svc/output/test.xml';
+        $c = new Controller(array(), 'GET');
+        $this->expectOutputString('<?xml version="1.0"?>
+<response><status>OK</status><results><cards><card suit="clubs"><value>2</value></card><card suit="clubs"><value>3</value></card><card suit="clubs"><value>4</value></card><card suit="clubs"><value>5</value></card><card suit="clubs"><value>6</value></card></cards></results></response>
+', 'Failed to get expected output');
+        $c->run($this->routes, $_SERVER['SCRIPT_NAME'], $this->params,'GET');
+    }
+
+    public function testBadXmlHandler()
+    {
+        global $_SERVER;
+        $_SERVER['SCRIPT_NAME'] = '/svc/output/testError.xml';
+        $c = new Controller(array(), 'GET');
+        header_register_callback ( 'printHeaders' );
+
+        $this->expectOutputString('<?xml version="1.0"?>
+<response><status>ERROR</status><results><cards><card suit="clubs"><value>2</value></card><card suit="clubs"><value>3</value></card><card suit="clubs"><value>4</value></card><card suit="clubs"><value>5</value></card><card suit="clubs"><value>6</value></card></cards></results></response>
+', 'Failed to get expected output');
+        $c->run($this->routes, $_SERVER['SCRIPT_NAME'], $this->params,'GET');
     }
 }
+
+

@@ -11,7 +11,7 @@ class testValidatorTest extends \PHPUnit_Framework_TestCase
     }
 
     // tests
-    public function testMe()
+    public function testValidationFunctionality()
     {
         $rules = '{"subscription_id" : "/([0-9]{1,15})/",
                   "!asset_type"     :"/([a-z]{1,15})/",
@@ -30,12 +30,12 @@ class testValidatorTest extends \PHPUnit_Framework_TestCase
         $params = array('subscription_id'=>12345,'views'=>'yes', 'coins'=>array(12,25,21), 'subscription_meta_foo'=>array(array('SOME_PRD_ID'=>12345)));
         $res = Validator::validate($rules,$params);
         $this->assertArrayHasKey('400', $res);
-        fwrite(STDOUT,"We got back: " . print_r($res,true) . "\n");
+        //fwrite(STDOUT,"We got back: " . print_r($res,true) . "\n");
         $params = array('subscription_id'=>12345,'views'=>'yes', 'coins'=>array(-12,25,21));
 
         $res = Validator::validate($rules,$params);
         $this->assertArrayHasKey('400', $res);
-        fwrite(STDOUT,"We got back: " . print_r($res,true) . "\n");
+        //fwrite(STDOUT,"We got back: " . print_r($res,true) . "\n");
         $params = 12;
         $fail = Validator::validate($rules,$params);
         $this->assertNotNull($fail,'We should get an array back failure becuase we did not pass an array to the validator');
