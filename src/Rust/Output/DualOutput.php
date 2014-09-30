@@ -9,7 +9,16 @@ namespace Rust\Output;
 class DualOutput {
     var $output; 
     
-    public function __construct($code=200, $data=array(), $options=array()) {
+    /**
+     * I do most of the work right in the constructor. If data or options are NOT php arrays,
+     * the constructor will throw an Exception.
+     *
+     * @param - code - int HTTP Response code
+     * @param - data - array/hash of what we need to write out
+     * @param - path - string, normally from $_SERVER['SCRIPT_NAME']
+     * @param - options - hash of output options.
+     */
+    public function __construct($code=200, $data=array(), $path='', $options=array()) {
 
         if (!is_array($data)) {
             throw new \Exception('DualOutput expects $data to be an array.');
@@ -25,15 +34,26 @@ class DualOutput {
             @header('Access-Control-Allow-Origin: '  . @$options['cors']['origin']);
             @header('Access-Control-Allow-Methods: ' . join(',', @$options['cors']['methods']));
         }
-        
-        $response_head = array('status'=>'OK');
+
+        if (preg_match(';^2;', $code)) {
+            $status = 'OK';
+        } else {
+            $status = 'ERROR';
+        }
+
+        $response_head = array('status'=>$status);
         $format        = (empty($options['output_format'])) ? 'json' : $options['output_format'];
 
-        if (!empty($_SERVER['SCRIPT_NAME'])) {
+        /*
+         * if we didn't get path passed to us, and $_SERVER['SCRIPT_NAME'] 
+         * set the path
+         */
+        if (empty($path) && !empty($_SERVER['SCRIPT_NAME'])) {
             $path = strtolower($_SERVER['SCRIPT_NAME']);
-            if (preg_match(";(xml|jsonp|json)$;", $path, $matches)) {
-                $format = $matches[0];
-            }
+        }
+
+        if (preg_match(";(xml|jsonp|json)$;", $path, $matches)) {
+            $format = $matches[0];
         }
 
         if ($format == 'json') {
@@ -51,6 +71,7 @@ class DualOutput {
         }
         
         if ($format == 'xml') {
+            $data = array_merge($response_head, $data);
             $this->output = $this->toXml($data, $options);
             print_r($this->output);
             return;

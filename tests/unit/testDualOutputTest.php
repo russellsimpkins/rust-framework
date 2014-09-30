@@ -26,9 +26,9 @@ class testDualOutputTest extends \PHPUnit_Framework_TestCase
                                          'xml_serializer_options'=>array('attr_names_table' => array('results' => 'news_item', 'related_urls' => 'link')));
         
         $this->expectOutputString('<?xml version="1.0"?>
-<response><results><related_urls link="russ"><age>40</age></related_urls></results></response>
+<response><status>OK</status><results><related_urls link="russ"><age>40</age></related_urls></results></response>
 ');
-        $out = new DualOutput(200, $this->data, $options);
+        $out = new DualOutput(200, $this->data, $_SERVER['SCRIPT_NAME'], $options);
         $this->assertNotNull($out->output);
         
     }
