@@ -57,14 +57,14 @@ class DualOutput {
         }
 
         if ($format == 'json') {
-            header('Content-Type: application/json; charset=UTF-8');
+            @header('Content-Type: application/json; charset=UTF-8');
             $this->output = json_encode(array_merge($response_head, $data));
             print_r($this->output);
             return;
         }
 
         if ($format == 'jsonp') {
-            header("Content-Type: application/javascript; charset=UTF-8");
+            @header("Content-Type: application/javascript; charset=UTF-8");
             $this->output = $_GET['callback'] . '(' . json_encode(array_merge($response_head, $data)) . ');';
             print_r($this->output);
             return;
