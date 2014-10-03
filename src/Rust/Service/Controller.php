@@ -101,9 +101,9 @@ class Controller {
      * @return hash    - e.g. array(200=>$result) or array(404=>'NOT FOUND');
      */
     public function run(&$routes, $path=null, $params=array()) {
-        
-        $notfound     = array(ResponseCodes::NOTFOUND=>'NOT FOUND.');
-        $notsupported = array(ResponseCodes::NOTSUPPORTED=>'NOT SUPPORTED.');
+
+        $notfound     = array(ResponseCodes::NOTFOUND    =>array('message'=>'NOT FOUND.'));
+        $notsupported = array(ResponseCodes::NOTSUPPORTED=>array('message'=>'NOT SUPPORTED.'));
         $found        = false;
         $out          = empty($routes['std_out']) ? null    : $routes['std_out'];
         $err          = empty($routes['std_err']) ? null    : $routes['std_err'];
@@ -406,11 +406,10 @@ class Controller {
      */
     private function iodocMethod($rule, &$route) {
         $item = array();
-        $item['URI']           = $rule;
-        $item['HTTPMethod']    = empty($route['action']) ? 'UNKNOWN'        : $route['action'];
-        $item['MethodName']    = empty($route['name'])   ? 'UNNAMED!'       : $route['name'];
-        $item['Synopsis']      = empty($route['docs'])   ? 'UNDOCUMENTED!.' : $route['docs'];
-        $item['RequiresOAuth'] = 'N';
+        $item['path']          = substr($rule, 1, strlen($rule)-2);
+        $item['httpMethod']    = empty($route['action']) ? 'UNKNOWN'        : $route['action'];
+        $item['name']          = empty($route['name'])   ? 'UNNAMED!'       : $route['name'];
+        $item['description']   = empty($route['docs'])   ? 'UNDOCUMENTED!.' : $route['docs'];
 
         /*
          * Get the regex patterns from the path urls. Path urls let you define variables in the url
@@ -419,11 +418,11 @@ class Controller {
          * variables get named in the route field "params". Users should ONLY name path params in "params"
          * $pathres == path regex patterns
          */
-        $end     = strlen($item['URI']);
+        $end     = strlen($item['path']);
         $pathres = array();
         $addre   = false;
         $elem    = '';
-        foreach (str_split($item['URI'],1) as $c) {
+        foreach (str_split($item['path'],1) as $c) {
             if ($c == '(') {
                 $addre = true;
                 $elem .= $c;
@@ -459,35 +458,41 @@ class Controller {
                     // than are in the url. 
                     continue;
                 } else {
-                    $des = "The parameter is expected in the URL. Valid values defined as a php regex: ${pathres[($i-1)]}";
+                    $regex = $pathres[($i-1)];
+                    $des = "The parameter is expected in the URL. Valid values defined as a php regex: ${regex}";
                 }
-                $item['parameters'][] = array( 'Name'        =>$route['params'][$i],
-                                               'Type'        =>'string', 
-                                               'Description' =>$des,
-                                               'Required'    =>'Y');
+                $name = $route['params'][$i];
+                $item['parameters'][$name] = array( 'title'       =>$route['params'][$i],
+                                                    'type'        =>'string', 
+                                                    'description' =>$des,
+                                                    'required'    =>true);
             }
         }
         
         if (isset($route['pcheck'])) {
             $params = $this->recurseParams($route['pcheck']);
             foreach ($params as $param) {
-                $parm = array('Name' => $param['name'],
-                              'Required' => $param['is_required'] ? 'Y' : 'N'
+                $parm = array('title' => $param['name'],
+                              'required' => $param['is_required'] ? true : false,
+                              'type' => 'string',
+                              'default' => ''
                               );
                 
                 if (!empty($param['elements']) && is_array($param['elements'])) {
-                    $parm['Description'] = 'JSON Object: ' . json_encode($param['elements']);
+                    $parm['description'] = 'JSON Object: ' . json_encode($param['elements']);
                 } else {
                     if ($param['is_validated']) {
-                        $parm['Description'] = 'Valid values defined as a php regex: ' . $param['regex'];
+                        // trim off the php regex boundries
+                        $regex = substr($param['regex'], 1, strlen($param['regex'])-2);
+                        $parm['description'] = 'Valid values defined as a php regex: ' . $regex;
                     } else {
-                        $parm['Description'] = 'The value is unchecked. See the method documentation for notes.';
+                        $parm['description'] = 'The value is unchecked. See the method documentation for notes.';
                     }
                 }
                 if ($param['is_repeated']) {
-                    $parm['Description'] .= ' This value is repeated.';
+                    $parm['description'] .= ' This value is repeated.';
                 }
-                $item['parameters'][] = $parm;
+                $item['parameters'][$param['name']] = $parm;
                 unset($parm);
             }
         }
@@ -502,20 +507,48 @@ class Controller {
         $data = array();
 
         $data['name']        = empty($routes['name']) ? 'UNNAMED REST Service' : $routes['name'];
-        $data['protocol']    = empty($routes['protocol']) ? 'http' : $routes['protocol'];
-        $data['baseURL']     = empty($routes['baseUrl']) ? 'localhost' : $routes['baseUrl'];
-        $data['publicPath']  = '';
-        $data['privatePath'] = '';
-        $data['auth']        = '';
-        $data['methods']     = array();
+        $data['protocol']    = empty($routes['protocol']) ? 'rest'     : $routes['protocol'];
+        $data['basePath']    = empty($routes['basePath']) ? 'http://localhost/svc' : $routes['baseUrl'];
+        $data['privatePath'] = empty($routes['version']) ? '/v1' : $routes['version'];
+
+        /**
+         * @see https://github.com/mashery/iodocs - 
+         * The following should only be added to the iodocs if
+         * the api supports oauth
+         */
+        $oauthChecks = array('auth'=>'auth',
+                             'oauth'=>'oauth',
+                             'oauthVersion'=>'version',
+                             'oauthType'=>'type',
+                             'oauthBaseUri'=>'base_uri',
+                             'oauthAuthorizationUri'=>'authorize_uri',
+                             'oauthAccessTokenUri'=>'access_token_uri',
+                             'oauthToken'=>'token',
+                             'oauthParam'=>'param',
+                             'oauthLocation'=>'location');
+        // param and location are attributes of the token
+        foreach ($oauthChecks as $name=>$value) {
+            if (!empty($routes[$name])) {
+                if (($name == 'param' || $name == 'location') && !empty($routes['token'])) {
+                    $data['token'][$value] = $routes[$name];
+                } else {
+                    $data[$value] = $routes[$name];
+                }
+            }
+        }
+        $data['resources']   = array();
+        $data['resources'][ "${routes['name']} Resources" ] = array();
+        $data['resources'][ "${routes['name']} Resources" ]['methods'] = array();
+        $methods = &$data['resources'][ "${routes['name']} Resources" ]['methods'];
+        $methods = array();
         
         foreach ($routes['routes'] as &$route) {
             $item = "";
             if (is_array($route['rule'])) {
-                
+                $variant = 1;
                 foreach ($route['rule'] as $rule) {
                     $item = $this->iodocMethod($rule, $route);
-                    $data['methods'][] = $item;
+                    $methods[ $route['name'].'v'.$variant++ ] = $item;
                 }
             } else {
                 if (empty($route['rule'])) {
@@ -524,7 +557,9 @@ class Controller {
                     $rule = $route['rule'];
                 }
                 $item = $this->iodocMethod($rule, $route);
-                $data['methods'][] = $item;
+
+
+                $methods[ $route['name'] ]  = $item;
             }
         }
         return array(\Rust\HTTP\ResponseCodes::GOOD=>$data);
