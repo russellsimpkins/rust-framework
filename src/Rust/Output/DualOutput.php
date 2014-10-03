@@ -21,7 +21,12 @@ class DualOutput {
     public function __construct($code=200, $data=array(), $path='', $options=array()) {
 
         if (!is_array($data)) {
-            throw new \Exception('DualOutput expects $data to be an array.');
+            // errors in the rust framework cause data to be a simple string
+            if (!preg_match(';^2;', $code)) {
+                $data = array('message'=>$data);
+            } else {
+                throw new \Exception('DualOutput expects $data to be an array.');
+            }
         }
 
         if (!is_array($options)) {
