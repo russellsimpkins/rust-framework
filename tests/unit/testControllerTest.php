@@ -22,6 +22,7 @@ class testControllerTest extends \Codeception\TestCase\Test
 {
     "std_out":"Rust\\\\Output\\\\NullOut",
     "std_err":"Rust\\\\Output\\\\NullErr",
+    "name"   :"Unit Tests",
     "routes":[
 	{
 	    "rule": ";/svc/v2/news/list.(json|xml);",
@@ -223,7 +224,7 @@ ROUTE_DEFINITION;
         $_SERVER['SCRIPT_NAME'] = '/svc/output/test.xml';
         $c = new Controller(array(), 'GET');
         $this->expectOutputString('<?xml version="1.0"?>
-<response><status>OK</status><results><cards><card suit="clubs"><value>2</value></card><card suit="clubs"><value>3</value></card><card suit="clubs"><value>4</value></card><card suit="clubs"><value>5</value></card><card suit="clubs"><value>6</value></card></cards></results></response>
+<response><results><cards><card suit="clubs"><value>2</value></card><card suit="clubs"><value>3</value></card><card suit="clubs"><value>4</value></card><card suit="clubs"><value>5</value></card><card suit="clubs"><value>6</value></card></cards></results></response>
 ', 'Failed to get expected output');
         $c->run($this->routes, $_SERVER['SCRIPT_NAME'], $this->params,'GET');
     }
@@ -236,7 +237,7 @@ ROUTE_DEFINITION;
         header_register_callback ( 'printHeaders' );
 
         $this->expectOutputString('<?xml version="1.0"?>
-<response><status>ERROR</status><results><cards><card suit="clubs"><value>2</value></card><card suit="clubs"><value>3</value></card><card suit="clubs"><value>4</value></card><card suit="clubs"><value>5</value></card><card suit="clubs"><value>6</value></card></cards></results></response>
+<response><results><cards><card suit="clubs"><value>2</value></card><card suit="clubs"><value>3</value></card><card suit="clubs"><value>4</value></card><card suit="clubs"><value>5</value></card><card suit="clubs"><value>6</value></card></cards></results></response>
 ', 'Failed to get expected output');
         $c->run($this->routes, $_SERVER['SCRIPT_NAME'], $this->params,'GET');
     }
