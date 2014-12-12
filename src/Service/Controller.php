@@ -159,6 +159,23 @@ class Controller {
                 }
 
                 /*
+                 * Add name/value pairs for the parameters passed in the URL,
+                 * but don't override existing params.
+                 */
+                $index = 0;
+                if (!empty($route['params'])) {
+                    foreach ($route['params'] as $param) {
+                        if (isset($this->params[$param])) {
+                            $index++;
+                        } else {
+                            if (!empty($matches[$index])) {
+                                $this->params[$param] = $matches[$index++];
+                            }
+                        }
+                    }
+                }
+
+                /*
                  * Run any filters. Filters support pre-processing such as
                  * validating the cookies. Passing in $this->params permits
                  * the filters to set variables, like getting the id from a
@@ -175,23 +192,6 @@ class Controller {
                          */
                         if ($ok !== TRUE) {
                             return $this->handleOut($ok, $out, $err);
-                        }
-                    }
-                }
-
-                /*
-                 * Add name/value pairs for the parameters passed in the URL,
-                 * but don't override existing params.
-                 */
-                $index = 0;
-                if (!empty($route['params'])) {
-                    foreach ($route['params'] as $param) {
-                        if (isset($this->params[$param])) {
-                            $index++;
-                        } else {
-                            if (!empty($matches[$index])) {
-                                $this->params[$param] = $matches[$index++];
-                            }
                         }
                     }
                 }
@@ -321,6 +321,88 @@ class Controller {
     }
 
     /**
+     * This function will generate help method information
+     *
+     * @codeCoverageIgnore
+     * @param - rule - the rule to write
+     * @param - route - the route information
+     */
+    public function helpMethod(&$rule, &$route) {
+        $item = array();
+        $item['uri']      = substr($rule, 1, strlen($rule)-2);
+        $item['method']   = $route['action'];
+        $item['name']     = empty($route['name']) ? 'Name not set in the route.' : $route['name'];
+        $item['provides'] = empty($route['docs']) ? 'To lazy add documentation to the route.' : $route['docs'];
+            
+        /*
+         * Get the regex patterns from the path urls. Path urls let you define variables in the url
+         * e.g. /some/( valid re )/svc/([a-z]{1,20})/example.json 
+         * The next block looks to parse out the ( ) and build up the expressions in $pathres. $pathres
+         * variables get named in the route field "params". Users should ONLY name path params in "params"
+         * $pathres == path regex patterns
+         */
+
+        $end     = strlen($item['uri']);
+        $pathres = array();
+        $addre   = false;
+        $elem    = '';
+
+        foreach (str_split($item['uri'],1) as $c) {
+            if ($c == '(') {
+                $addre = true;
+                $elem .= $c;
+                continue;
+            }
+            if ($c == ')') {
+                $addre     = false;
+                $elem     .= $c;
+                $pathres[] = $elem;
+                $elem      = '';
+                continue;
+            }
+            if ($addre) {
+                $elem .= $c;
+            }
+        }
+        
+        /*
+         * Paths can have params that can have names. We want to grab all
+         * but the first path parameter names since the first is just a place
+         * holder given that preg_match returns the entire string in position 0
+         * when there is a match.
+         */
+        if (isset($route['params']) && 
+            is_array($route['params'])) {
+            $end                     = count($route['params']);
+            $item['path_parameters'] = array();
+            for ($i = 1; $i < $end; ++$i) {
+                $item['path_parameters'][$route['params'][$i]] = array( 'name'        =>$route['params'][$i], 
+                                                                        'regex'       =>@$pathres[($i-1)], 
+                                                                        'is_required' =>true, 
+                                                                        'is_validated'=>true);
+            }
+            
+            if (count($item['path_parameters']) == 0) {
+                unset($item['path_parameters']);
+            }
+        }
+        
+        if (isset($route['pcheck'])) {
+            $methods = array($item['method']);
+            if (preg_match('; ;', $item['method'])) {
+                $methods = explode(' ', $item['method']);
+            }
+            $pparams = $this->recurseParams($route['pcheck']);
+            
+            foreach ($methods as $_=>$method) {
+                $method = strtolower($method); 
+                $item["${method}_parameters"] = $pparams;
+            }
+        }
+        return $item;
+    }
+
+    /**
      * Creates documentation from the route(s)
      *
      * @codeCoverageIgnore
@@ -332,67 +414,13 @@ class Controller {
             if (empty($route['rule'])) {
                 continue;
             }
-            $item['uri']      = $route['rule'];
-            $item['method']   = $route['action'];
-            $item['name']     = empty($route['name']) ? 'Name not set in the route.' : $route['name'];
-            $item['provides'] = empty($route['docs']) ? 'To lazy add documentation to the route.' : $route['docs'];
-            
-            /*
-             * Get the regex patterns from the path urls. Path urls let you define variables in the url
-             * e.g. /some/( valid re )/svc/([a-z]{1,20})/example.json 
-             * The next block looks to parse out the ( ) and build up the expressions in $pathres. $pathres
-             * variables get named in the route field "params". Users should ONLY name path params in "params"
-             * $pathres == path regex patterns
-             */
-            $end     = strlen($item['uri']);
-            $pathres = array();
-            $addre   = false;
-            $elem    = '';
-            foreach (str_split($item['uri'],1) as $c) {
-                if ($c == '(') {
-                    $addre = true;
-                    $elem .= $c;
-                    continue;
+            if (is_array($route['rule'])) {
+                foreach ($route['rule'] as $rule) {                    
+                    $data[] = $this->helpMethod($rule, $route);
                 }
-                if ($c == ')') {
-                    $addre     = false;
-                    $elem     .= $c;
-                    $pathres[] = $elem;
-                    $elem      = '';
-                    continue;
-                }
-                if ($addre) {
-                    $elem .= $c;
-                }
+            } else {
+                $data[] = $this->helpMethod($route['rule'], $route);
             }
-
-            /*
-             * Paths can have params that can have names. We want to grab all
-             * but the first path parameter names since the first is just a place
-             * holder given that preg_match returns the entire string in position 0
-             * when there is a match.
-             */
-            if (isset($route['params']) && 
-                is_array($route['params'])) {
-                $end                     = count($route['params']);
-                $item['path_parameters'] = array();
-                for ($i = 1; $i < $end; ++$i) {
-                    $item['path_parameters'][$route['params'][$i]] = array( 'name'        =>$route['params'][$i], 
-                                                                            'regex'       =>@$pathres[($i-1)], 
-                                                                            'is_required' =>true, 
-                                                                            'is_validated'=>true);
-                }
-
-                if (count($item['path_parameters']) == 0) {
-                    unset($item['path_parameters']);
-                }
-            }
-
-            if (isset($route['pcheck'])) {
-                $item[strtolower($item['method']).'_parameters'] = $this->recurseParams($route['pcheck']);
-            }
-
-            $data[] = $item;
         }
         return array(ResponseCodes::GOOD=>$data);
     }
@@ -614,7 +642,7 @@ class Controller {
             $item['is_repeated']  = $repeats;
             
             if ($hasRule) {
-                $item['regex']    = $val;
+                $item['regex']    = substr($val, 1, strlen($val)-2);
             }
 
             $data[$key] = $item;
