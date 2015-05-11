@@ -11,7 +11,11 @@ class testFilterTest extends \PHPUnit_Framework_TestCase
     {
     }
 
+<<<<<<< HEAD
     // tests
+=======
+    /*
+>>>>>>> bc0629980df6dc3777dcfdcce9f67fba1c9a7c03
     public function testFraudCheck()
     {
         $f = new FraudCheck();
@@ -22,5 +26,9 @@ class testFilterTest extends \PHPUnit_Framework_TestCase
         $v = $f->filter($p);
         $this->assertArrayHasKey('500',$v);
     }
+<<<<<<< HEAD
+=======
+    */
+>>>>>>> bc0629980df6dc3777dcfdcce9f67fba1c9a7c03
 
 }

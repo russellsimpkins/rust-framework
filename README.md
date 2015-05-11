@@ -1,9 +1,7 @@
 PHP Rust Framework
 ======
 
-The Rust Framework is a basic, bare bones RESTFul Framework for PHP that minimizes dependencies while providing variable validation and rapid adaptation via inversion of control. 
-
-**NOTE** I am in the process of updating the docs to support namespaces etc. so please forgive any mistakes or omissions for the new few days/weeks and feel free to contact me with questions.
+The Rust Framework is a basic, bare bones, RestFul framework for PHP with no dependencies that provides input validation and generates api documentation in a custom format and IoDoc format.
 
 Why use it?
 ------
@@ -13,48 +11,58 @@ I found a few great benefits developing an API with this framework.
   - Quick and easy to make changes. If you need to change the URL, add parameters to the url or to the post body its really quick and easy since it's just a configuration change.
   - Zero variable validation in my code. It really cleans up your code. You go from having a lot of variable checking in each method to only checking to see if stuff came in e.g. paging values don't have to be passed in, but if they are, you only check for is_set or !empty and not if it's a valid integer in range.
   - Easily add new standard out/standard error handlers without breaking everything else. When I added the "help" feature, I was able to add a straight json output in seconds.
-  - Self documenting (more or less). The help and iodocs are routed for everyone. You just need to add the description and name fields to your route.
+  - Self documenting (more or less). The help and iodocs are routed for everyone. You just need to add the description and name fields to your configuration file (routes.json)
+
+Example App
+------
+https://github.com/russellsimpkins/rust-example
 
 Quick start
 ------
-Let's assume you're using apache and you map to your PHP:
+Let's assume you're using Apache to map HTTP requests to your PHP:
 
 ```
     AliasMatch ^/svc/user /some/php/user/service.php
 ```
 
-The framework expects you to define a route for your service. Let's suppose you have the following service that gets an existing user based on their user id, e.g.
+The framework expects you to define routes for your API calls. Let's suppose you have the following service that gets an existing user based on their user id, e.g.
 
 ```
     /svc/user/32451.json
 ```
 
-Create a **rule** to handle the service:
+You create a **rule** to handle the service:
 
 ```
     'rule' => ';^/svc/user/([0-9]{1-10}).json$;'
 ```
 
-PHP's preg_match expects delimiters, so we have to add ; before and after the regex.  That rule will have a supported action e.g. GET, PUT, POST or DELETE. You specify which method to support using the **action** field. 
+The framework uses PHP's preg_match which expects delimiters, so we have to add ; before and after the regex, but it could another character.  That rule will have a supported action e.g. GET, PUT, POST or DELETE. You specify which method to support using the **action** field.
 
 ```
     'action' => 'GET'
 ```
 
-So, when someone requests /svc/user/321.json using GET, Rust will match the **rule** we have defined. Rust will grab /svc/user/321.json and 321 for you and add them to the hash based on the values you identified in **params**
+You can have more than one request method in the action:
+
+```
+    'action' => 'GET PUT POST'
+```
+
+So, when someone requests /svc/user/321.json using GET, Rust will match the **rule** we have defined. Rust will grab /svc/user/321.json and 321 for you and add them to the map based on the values you identified in **params**
 
 ```
     'params'=>array('script_path','user_id')
 ```
 
-Rust uses the params to create entries into a hash of data:
+Rust uses the params to create entries into the map of data:
 
 ```
     $data['script_path'] = '/svc/user/321.json';
     $data['user_id'] = 321;
 ```
 
-Rust would create an instance of the **class** you defined and execute the **method** you defined. If you had 
+Rust will create an instance of the **class** you defined and execute the **method** you defined. If you had 
 
 ```
     'class'  => 'User',
@@ -67,6 +75,24 @@ Rust would do this:
     $c = new $class();
     $c->$method( $data );
 ```
+
+You can pass constructor params as well. Let's assume your class has a data access object (DAO) and you want to be able to swap to a Mock DAO for testing. You just need to add a config entry to the route and put the parameters you want passed in a **class** entry. Here's a json example:
+
+```
+
+"config": {
+	"class": {
+		"dao": Example\\ContentDao",
+		"dbhost":"host",
+		"dbuser":"user,
+		"dbpwd":"pass",
+		"db": "my_database,
+		"limit_images": true
+	}
+}
+
+```
+
 As a user, you would write your custom logic and return the results. Since you have a regex to define what "user_id" should have, there is no need to have any logic to validate the number is a number and not a string or some SQL injection attack. You simply use the data as $data['user_id']. You do whatever and return either:
 
 ```
@@ -141,9 +167,11 @@ Each route consists of the following attributes:
 ```
    ;^/svc/asset/user/([0-9]{1,15})/license/count.json$;
 ```
-**action**: what HTTP method. checks $_SERVER['REQUEST_METHOD']
+You can and should name each of the parameters you wish to capture in the url using the **params** field.
 
 **params**: the params element allows you to name the parameters in the url. e.g. ([0-9]{1,15}) is user id or age. If you omit params, you will not get them in the $data parameter passed to your method
+
+**action**: what HTTP Request method. checks $_SERVER['REQUEST_METHOD']
 
 **class**: this is the class file the code should create a new instance of. 
 
@@ -270,9 +298,9 @@ The validator is the code that checks the parameters against the regular pattern
 
 Background
 ------
-I inherited a lot of PHP that was cumbersome to maintain because it was overly complicated to the point of obfuscation. You had to spend hours in research before you could be productive. That motivated me to come up with something that was simple and easy to use. I also wanted to keep the dependencies to a bare minimum and be flexible for developers. I also wanted something that made it easy to determine entry points. 
+I inherited a lot of PHP that was cumbersome to maintain because it was overly complicated to the point of obfuscation. You had to spend hours in research before you could be productive. That legacy code motivated me to create something that was simple and easy to use. I keep dependencies to a bare minimum. This framework is extremely flexible for developers and super easy to determine entry points for API calls.
 
-This framework makes it easy and fun to write PHP. Input validation has proven to be a huge benefit. The defensive variable checking disappears and you can focus on the logic. I'm very satisfied with this project.
+This framework makes it fun to write PHP. Input validation has proven to be a huge benefit. The defensive variable checking disappears from your code and you can focus on the logic. I'm very satisfied with this project.
 
-My friends at worked named this the Rust framework and that is why it's src/Rust and not src/Rest. 
+My friends at work named this the Rust framework and that is why it's src/Rust and not src/Rest. 
 
